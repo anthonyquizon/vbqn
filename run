@@ -1,0 +1,5 @@
+#! /usr/bin/env bash
+export TIMEFORMAT='%3R'
+ARGS=$@
+git clone https://github.com/mlochbaum/BQN.git --depth=1 _extern/bqn 
+find . -name '*.bqn'| entr -r sh -c "time (bqn $ARGS)"
