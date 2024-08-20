@@ -44,6 +44,7 @@ PN←1(∾/∾˜)(∨/⊣)  # Partitioned-none: partitions where 𝕨<𝕩 is ne
 # Source to ⟨tokens, roles, number of identifiers, literals⟩
 # Identifiers then literal tokens are numbered starting at vi
 Tokenize←{ctx‿System‿vars←𝕨
+  #•Show "-- c.bqn --"
   # Resolve comments and strings
   c←𝕩='#'⋄s←/0‿0⊸«⊸∧sm←𝕩='''⋄d←/dm←𝕩='"'
   g←⍋q←∾⟨  s⋄¯1↓d⋄/c⟩ ⋄q↩g⊏q                # Open indices
@@ -368,10 +369,6 @@ Compile←{
   defaults←⟨⟩‿⟨⟩‿(!∘"System values not supported"¨)‿⟨⟩‿(↕0)
   ctx‿prims‿Sys‿vars‿redef ← ∾⟜(≠↓defaults˙) ⋈⍟((≠defaults)<≠)𝕨
   ⟨tok,role,val,t0,t1⟩←tx←ctx‿sys‿vars Tokenize 𝕩
-  ⟨oc,prim,blk,bdy,oi⟩←⟨role,⊑val,t0,t1,redef»0¨vars⟩ Parse tok
-  #•Show¨∾⟨prim⊏prims⟩∾1↓val
-  #•Show •Type ¨∾⟨prim⊏prims⟩∾1↓val
-  # TODO add ctx to each function
-  #•Show "--"
+  ⟨oc,prim,blk,bdy,oi⟩←ps←⟨role,⊑val,t0,t1,redef»0¨vars⟩ Parse tok
   ⟨oc, ∾⟨prim⊏prims⟩∾1↓val, <˘⍉>blk, <˘⍉>bdy, oi, tx⟩
 }

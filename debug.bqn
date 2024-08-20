@@ -3,15 +3,24 @@
 runtime ← •Import "_extern/bqn/rt.bqn"     # Runtime: primitives available to VM
 gl      ← •Import "_extern/bqn/src/glyphs.bqn"
 
-#compile ← gl •Import "src/compiler.bqn"  # Compiler: source → object code
-compile ← gl •Import "src/compiler0.bqn"  # Compiler: source → object code
-vm      ←    •Import "_extern/bqn/vm.bqn"     # VM: interprets object code
+compile  ← gl •Import "src/compiler.bqn"  # Compiler: source → object code
+#compile0  ← gl •Import "_extern/bqn/src/c.bqn"     # 
+compile0 ← gl •Import "src/c.bqn"  # Compiler: source → object code
+#vm      ←    •Import "_extern/bqn/vm.bqn"     # VM: interprets object code
+vm      ←    •Import "src/vm.bqn"     # VM: interprets object code
 
 # TODO map •FFI to  bqns FFI
 
+bkp←"foo.bqn:2"
+
 # Define system values later, to include BQN
-#BQN ← ⟨runtime, {System 𝕩}⟩ ⊸ (Compile)
-BQN ← {⟨𝕨, runtime, { System 𝕩 }⟩ (VM Compile) 𝕩}
+BQN ← ⟨runtime, {System 𝕩}⟩ ⊸ (Compile)
+BQN0 ← {
+  dir 𝕊 src:
+    out←⟨𝕨, runtime, { System 𝕩 }⟩ Compile0 src
+    # TODO preparse
+    dir‿src‿⟨"foo.bqn:2"⟩ VM out
+}
 
 #⌜
 # System values
@@ -34,43 +43,30 @@ Show ← •Out∘Fmt⊸⊢⊢
 Eval←{
   0 < ≠𝕩 ?
     t ← ⊑ "-e"‿"-p" ⊐ ⊏𝕩
-    # TODO add args
     f←0⊑𝕩
     dir←f/˜¬+`'/'=f
-    #•Show t
-    {dir⇐dir} BQN •file.Chars 0⊑𝕩
-    #•Show •file.Chars 0⊑𝕩
-    #Show⍟(t=1)∘BQN¨ (t<2)◶⟨•file.Chars¨, 1⊸↓⟩ 𝕩
-    #𝕩
-    #Show⍟(t=1)∘BQN¨ (t<2)◶⟨•file.Chars¨, 1⊸↓⟩ 𝕩
+    dir BQN0 •file.Chars 0⊑𝕩
 }
 
+# TODO defer import
 Import ← {
-  path←𝕨.dir∾'/'∾𝕩
-  Eval ⟨path⟩
+  # TODO add args
+  Eval ⟨𝕨.dir∾'/'∾𝕩⟩
 }
 
 # Lookup table
-sys_names←⟨
+systable←⟨
   "bqn"‿"type"‿"glyph"‿"decompose"‿"repr"‿"fmt"‿"out"‿"show"‿"import"
    BQN ‿•Type ‿ Glyph ‿ Decompose ‿ Repr ‿ Fmt ‿•Out ‿ Show ‿ Import
 ⟩
 
+  # Lookup table
 FindSys ← {
   i ← 𝕨⊐𝕩
   { ! ∾⟨"Unknown system value",(1≠≠𝕩)/"s",":"⟩∾" •"⊸∾¨𝕩 }∘/⟜𝕩⍟(∨´) i=≠𝕨
   i
 }
-System ← {
-  f←{
-    #•Show 𝕩
-    #•Show 𝕨
-      𝕨⊸FindSys⊏𝕩˙
-    }´sys_names
-  #•Show 𝕨 F 𝕩
-  𝕨 F 𝕩
-}
-
+system ← {𝕨⊸FindSys⊏𝕩˙}´systable
 
 Eval •args
 
