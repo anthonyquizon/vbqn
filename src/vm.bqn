@@ -1,3 +1,5 @@
+lf←@+10‿13
+
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -175,10 +177,18 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-bkt←2
-pbkt←@
+bkt←4
+win←2
 
-Repl ←{ 𝕊 env‿tok:
+PrintLines ← { src 𝕊 n:
+  l←∾⟨¯1↓⌽n-↕win,n+↕win⟩
+  l↩l/˜(l≥0)∧l<≠src
+  arr← ⊣◶""‿" <--"¨(n=l)
+  •Out ln←1↓∾lf⊸∾¨(∾⟜"  "∘•Fmt¨l) ∾¨ (src⊏˜l) ∾¨ arr
+  •Out ""
+}
+
+Repl ←{ src 𝕊 n‿env‿tok:
   •Show "BREAKPOINT!"
   # inject env variables into repl
   v←env.vars
@@ -188,26 +198,23 @@ Repl ←{ 𝕊 env‿tok:
   l←⟨⟩
   r←•ReBQN {repl⇐"loose"}
   R 1↓∾'⋄'⊸∾¨{n‿v: n∾'←'∾•Fmt v}¨names⋈¨val
-
-  # TODO show previous lines
-
+  src PrintLines n
   { 𝕊:
+      {𝕊: •term.OutRaw "   "}⍟(1⊸≡) 0=≠l
       c←•term.CharB "/dev/fd/0"
-      # TODO if \
       l∾↩<c
       {𝕊: •Show R ¯1↓l ⋄ l↩⟨⟩}⍟(1⊸≡) ∨´c=lf
   }•_while_ 1 @
 }
 
 # Evaluate a body
-RunBC ← { bc‿pos‿env‿ln‿tok:  # bytecode, starting position, environment
+RunBC ← { src 𝕊 bc‿pos‿env‿ln‿tok:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    p←pos⊑ln
-    {𝕊: pbkt↩bkt ⋄ Repl env‿tok}⍟(1⊸≡) (p≠pbkt)∧p=bkt
-    # Start repl
-    # inject all variables in environment
+    # Eval Breakpoints
+    n←pos⊑ln
+    {𝕊:  src Repl n‿env‿tok}⍟(1⊸≡) n=bkt
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -218,18 +225,23 @@ RunBC ← { bc‿pos‿env‿ln‿tok:  # bytecode, starting position, environme
   stack.rslt
 }
 
-lf←@+10‿13
 # TODO input source code and breakpoints
 # Evaluate a program, given the compiler output
 { dir‿src‿bkt VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  ln←(0⊑loc)⊏+`src∊lf
+  # TODO ln last points
+  ln←1+(0⊑loc)⊏+`src∊lf
+  ln↩¯1¨⌾((¬∊ln)⊸/) ln
+  srcln←⟨""⟩∾1↓¨src⊔˜+`src∊lf # drop newlines and offset with empty (lines are 1-based)
+  #•Show ln
+  #•Show ln
+  #•Exit 0
 
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      RunBC bc‿start‿env‿ln‿(2⊑token)
+      srcln RunBC bc‿start‿env‿ln‿(2⊑token)
     }
   }¨ bodyInfo
 
