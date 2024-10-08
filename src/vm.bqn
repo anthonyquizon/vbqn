@@ -1,5 +1,3 @@
-lf←@+10‿13
-
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -11,13 +9,10 @@ lf←@+10‿13
 # - GetF: Get corresponding field from namespace 𝕩
 MakeVar ← { program 𝕊 name:
   v←@  # Value
-  id⇐name
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
-  GetOpt  ⇐ { 𝕊: @ }
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
     Get ↩ {𝕊:v}
-    GetOpt ↩ Get
     (SetU ↩ {v↩𝕩}) 𝕩
   }
   SetQ ⇐ 0∘SetN
@@ -177,44 +172,11 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-bkt←4
-win←2
-
-PrintLines ← { src 𝕊 n:
-  l←∾⟨¯1↓⌽n-↕win,n+↕win⟩
-  l↩l/˜(l≥0)∧l<≠src
-  arr← ⊣◶""‿" <--"¨(n=l)
-  •Out ln←1↓∾lf⊸∾¨(∾⟜"  "∘•Fmt¨l) ∾¨ (src⊏˜l) ∾¨ arr
-  •Out ""
-}
-
-Repl ←{ src 𝕊 n‿env‿tok:
-  •Show "BREAKPOINT!"
-  # inject env variables into repl
-  v←env.vars
-  id←{𝕩.id}¨v
-  val←{𝕩.GetOpt @}¨v
-  names←id⊏0⊑tok
-  l←⟨⟩
-  r←•ReBQN {repl⇐"loose"}
-  R 1↓∾'⋄'⊸∾¨{n‿v: n∾'←'∾•Fmt v}¨names⋈¨val
-  src PrintLines n
-  { 𝕊:
-      {𝕊: •term.OutRaw "   "}⍟(1⊸≡) 0=≠l
-      c←•term.CharB "/dev/fd/0"
-      l∾↩<c
-      {𝕊: •Show R ¯1↓l ⋄ l↩⟨⟩}⍟(1⊸≡) ∨´c=lf
-  }•_while_ 1 @
-}
-
 # Evaluate a body
-RunBC ← { src 𝕊 bc‿pos‿env‿ln‿tok:  # bytecode, starting position, environment
+RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    # Eval Breakpoints
-    n←pos⊑ln
-    {𝕊:  src Repl n‿env‿tok}⍟(1⊸≡) n=bkt
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -225,26 +187,17 @@ RunBC ← { src 𝕊 bc‿pos‿env‿ln‿tok:  # bytecode, starting position, 
   stack.rslt
 }
 
-# TODO input source code and breakpoints
 # Evaluate a program, given the compiler output
-{ dir‿src‿bkt VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  # TODO ln last points
-  ln←1+(0⊑loc)⊏+`src∊lf
-  ln↩¯1¨⌾((¬∊ln)⊸/) ln
-  srcln←⟨""⟩∾1↓¨src⊔˜+`src∊lf # drop newlines and offset with empty (lines are 1-based)
-  #•Show ln
-  #•Show ln
-  #•Exit 0
+{ VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
 
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      srcln RunBC bc‿start‿env‿ln‿(2⊑token)
+      RunBC bc‿start‿env
     }
   }¨ bodyInfo
-
 
   blocks ← {type‿imm‿body:
     # Handle operands
@@ -261,6 +214,7 @@ RunBC ← { src 𝕊 bc‿pos‿env‿ln‿tok:  # bytecode, starting position, 
       }
       ⊑
     ⟩
+
     # Assemble bodies
     nmc ← "No matching case"
     Then ← {first 𝕊 next: {skipMark≢r←𝕨First𝕩 ? r ; 𝕨Next𝕩}}
@@ -289,4 +243,3 @@ RunBC ← { src 𝕊 bc‿pos‿env‿ln‿tok:  # bytecode, starting position, 
   
   (⊑blocks){𝔽} {program⇐program}
 }
-

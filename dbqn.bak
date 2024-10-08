@@ -3,22 +3,16 @@
 runtime ← •Import "_extern/bqn/rt.bqn"     # Runtime: primitives available to VM
 gl      ← •Import "_extern/bqn/src/glyphs.bqn"
 
-compile  ← gl •Import "src/compiler.bqn"  # Compiler: source → object code
-#compile0  ← gl •Import "_extern/bqn/src/c.bqn"     # 
-compile0 ← gl •Import "src/c.bqn"  # Compiler: source → object code
-#vm      ←    •Import "_extern/bqn/vm.bqn"     # VM: interprets object code
+#compile  ← gl •Import "src/compiler.bqn"  # Compiler: source → object code
+compile  ← gl •Import "_extern/bqn/src/c.bqn"     # 
 vm      ←    •Import "src/vm.bqn"     # VM: interprets object code
 
 # TODO map •FFI to  bqns FFI
 
-bkp←"foo.bqn:2"
-
-# Define system values later, to include BQN
-BQN ← ⟨runtime, {System 𝕩}⟩ ⊸ (Compile)
-BQN0 ← {
+#BQN ← ⟨runtime, {System 𝕩}⟩ ⊸ (Compile)
+BQN ← {
   dir 𝕊 src:
-    out←⟨𝕨, runtime, { System 𝕩 }⟩ Compile0 src
-    # TODO preparse
+    out←⟨runtime, { System 𝕩 }⟩ Compile src
     dir‿src‿⟨"foo.bqn:2"⟩ VM out
 }
 
@@ -45,7 +39,7 @@ Eval←{
     t ← ⊑ "-e"‿"-p" ⊐ ⊏𝕩
     f←0⊑𝕩
     dir←f/˜¬+`'/'=f
-    dir BQN0 •file.Chars 0⊑𝕩
+    dir BQN •file.Chars 0⊑𝕩
 }
 
 # TODO defer import

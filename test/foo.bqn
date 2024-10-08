@@ -1,5 +1,7 @@
 a←2
+C←{𝕩+1}
 #Foo
 # Bar
 b←3
-a{𝕩+𝕨}b
+•Show b
+a
