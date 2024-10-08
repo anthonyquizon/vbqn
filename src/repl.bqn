@@ -35,17 +35,13 @@ PrintLines ← { src 𝕊 n:
 Catch ← { 𝕊: ·‿n ←•CurrentError @ ⋄ •Out n}
 
 Eval ←{
-    env 𝕊 𝕩 : 𝕩≡")r" ? 
+       · 𝕊 ⟨⟩ : ⟨⟩
+  ;  env 𝕊 𝕩 : 𝕩≡")r" ? 
       •Out "Running program"
       c ← ⟨runtime, { System 𝕩 }⟩ Compile env.src
       VM c
-      0
   ; env 𝕊 𝕩 :
-    {
-      c ← (⟨runtime, { System 𝕩 }⟩⊸Compile) 𝕩
-      •Show VM c
-    }⎊Catch 𝕩
-    1
+    { •Show VM (⟨runtime, { System 𝕩 }⟩⊸Compile) 𝕩 }⎊Catch 𝕩
 }
 
 
@@ -53,13 +49,13 @@ Eval ←{
 Repl ⇐ {
   𝕊 f:
     env←{src⇐•file.Chars f}
-
     Init_c ⟨⟩
     buf←' '¨↕1024
     { 𝕊:
       r‿l←Input_c buf
       l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
-      ⊣◶⟨0,env Eval l⟩ r
+      env Eval l
+      r
     }•_while_ ⊢ 1
 }
 
