@@ -35,10 +35,9 @@ PrintLines ← { src 𝕊 n:
 Catch ← { 𝕊: ·‿n ←•CurrentError @ ⋄ •Out n}
 
 Eval ←{
-     ·‿0 𝕊 · : 0
-  ; ⟨src⟩ 𝕊 𝕩 : 𝕩≡⟨⟩ ? # case when nothing is loaded
+    env 𝕊 𝕩 : 𝕩≡")r" ? 
       •Out "Running program"
-      c ← ⟨runtime, { System 𝕩 }⟩ Compile src
+      c ← ⟨runtime, { System 𝕩 }⟩ Compile env.src
       VM c
       0
   ; env 𝕊 𝕩 :
@@ -53,13 +52,14 @@ Eval ←{
 # f: file
 Repl ⇐ {
   𝕊 f:
-    src←•file.Chars f
+    env←{src⇐•file.Chars f}
+
     Init_c ⟨⟩
     buf←' '¨↕1024
     { 𝕊:
       r‿l←Input_c buf
       l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
-      ⟨src, r⟩ Eval l
+      ⊣◶⟨0,env Eval l⟩ r
     }•_while_ ⊢ 1
 }
 
