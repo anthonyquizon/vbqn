@@ -182,8 +182,8 @@ RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting posit
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    #l←pos⊑ln
-    #(cb.Breakpoint⟜l‿env)⍟(1⊸≡) l=bkt
+    l←pos⊑ln
+    {𝕊: cb.Breakpoint env}⍟(1⊸≡) l=bkt
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -200,9 +200,8 @@ RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting posit
       VM 𝕩: ⟨⟩‿⟨⟩‿⟨⟩ VM 𝕩;
   ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
     ·‿·‿src←ctx
-    ln←1
-    #ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
-    #ln↩¯1¨⌾((¬∊ln)⊸/) ln
+    ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
+    ln↩¯1¨⌾((¬∊ln)⊸/) ln  # ensure that only one line number exists as stop marker 
     #srcln←⟨""⟩∾1↓¨src⊔˜+`src∊lf # drop newlines and offset with empty (lines are 1-based)
 
     bodies ← {start‿vars‿names‿export:
@@ -256,5 +255,6 @@ RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting posit
       names⇐0⊑2⊑token
     }
     
+    # TODO return environment
     (⊑blocks){𝔽} {program⇐program}
 }

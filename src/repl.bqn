@@ -32,18 +32,19 @@ PrintLines ← { src 𝕊 n:
   •Out ""
 }
 
-
 Breakpoint←{
   𝕨 𝕊 env:
     •Out "Breakpoint!"
     buf←' '¨↕1024
     { 𝕊:
       r‿l←Input_c buf
+      •Exit⍟(¬r) r
       l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
       env Eval l
-      r
-    }•_while_ ⊢ 1
+    }•_while_ 1 1
 }
+
+cb←{Breakpoint⇐Breakpoint} # callbacks
 
 # TODO line /character positions
 Catch←{𝕊: •Out "Error: " ∾ 1⊑•CurrentError @ ⋄ ⟨⟩}
@@ -53,26 +54,27 @@ Eval ←{
   ;  src 𝕊 𝕩 : 𝕩≡")r" ? 
       •Out "Running program"
       c ← ⟨runtime, { System 𝕩 }⟩ Compile src
-      {Breakpoint⇐Breakpoint}‿2‿src VM c
-  ; · 𝕊 𝕩 :
+      cb‿2‿src VM c
+  ; · 𝕊 l:
     #FIXME cleanup
-    c←{ ⟨runtime, { System 𝕩 }⟩ Compile 𝕩 }⎊Catch 𝕩
-    {𝕊: {•SHow VM 𝕩}⎊Catch c}⍟(0≠≠c) @
+    c←{ ⟨runtime, { System 𝕩 }⟩ Compile 𝕩 }⎊Catch l
+    •Show { cb‿@‿l VM 𝕩 }⍟(0≠≠c) c
 }
 
 # f: file
 # TODO repl history
 Repl ⇐ {
-  𝕊 f:
+      𝕊 f: ⟨⟩ 𝕊 f;
+  env 𝕊 f:
     src←•file.Chars f
     Init_c ⟨⟩
     buf←' '¨↕1024
     { 𝕊:
       r‿l←Input_c buf
+      •Exit⍟(¬r) r
       l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
       src Eval l
-      r
-    }•_while_ ⊢ 1
+    }•_while_ 1 1
 }
 
 
