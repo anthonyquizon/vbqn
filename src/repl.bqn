@@ -32,24 +32,10 @@ PrintLines ← { src 𝕊 n:
   •Out ""
 }
 
-Catch ← { 𝕊: ·‿n ←•CurrentError @ ⋄ •Out n}
 
-Eval ←{
-       · 𝕊 ⟨⟩ : ⟨⟩
-  ;  env 𝕊 𝕩 : 𝕩≡")r" ? 
-      •Out "Running program"
-      c ← ⟨runtime, { System 𝕩 }⟩ Compile env.src
-      VM c
-  ; env 𝕊 𝕩 :
-    { •Show VM (⟨runtime, { System 𝕩 }⟩⊸Compile) 𝕩 }⎊Catch 𝕩
-}
-
-
-# f: file
-Repl ⇐ {
-  𝕊 f:
-    env←{src⇐•file.Chars f}
-    Init_c ⟨⟩
+Breakpoint←{
+  𝕨 𝕊 env:
+    •Out "Breakpoint!"
     buf←' '¨↕1024
     { 𝕊:
       r‿l←Input_c buf
@@ -59,6 +45,38 @@ Repl ⇐ {
     }•_while_ ⊢ 1
 }
 
+# TODO line /character positions
+Catch←{𝕊: •Out "Error: " ∾ 1⊑•CurrentError @ ⋄ ⟨⟩}
+
+Eval ←{
+       · 𝕊 ⟨⟩ : ⟨⟩
+  ;  src 𝕊 𝕩 : 𝕩≡")r" ? 
+      •Out "Running program"
+      c ← ⟨runtime, { System 𝕩 }⟩ Compile src
+      {Breakpoint⇐Breakpoint}‿2‿src VM c
+  ; · 𝕊 𝕩 :
+    #FIXME cleanup
+    c←{ ⟨runtime, { System 𝕩 }⟩ Compile 𝕩 }⎊Catch 𝕩
+    {𝕊: {•SHow VM 𝕩}⎊Catch c}⍟(0≠≠c) @
+}
+
+# f: file
+# TODO repl history
+Repl ⇐ {
+  𝕊 f:
+    src←•file.Chars f
+    Init_c ⟨⟩
+    buf←' '¨↕1024
+    { 𝕊:
+      r‿l←Input_c buf
+      l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
+      src Eval l
+      r
+    }•_while_ ⊢ 1
+}
+
+
+#•SHow VM (⟨runtime, { System 𝕩 }⟩⊸Compile) "1+1"
 Repl "../test/foo.bqn"
 #GetLine @
 #•Show 

@@ -1,3 +1,7 @@
+
+
+lf←@+10‿13
+
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -172,11 +176,14 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
+# Reference: https://github.com/anthonyquizon/dbqn/blob/79458399f6335ee73f4248945e25240a803651d4/src/vm.bqn
 # Evaluate a body
-RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
+RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
+    #l←pos⊑ln
+    #(cb.Breakpoint⟜l‿env)⍟(1⊸≡) l=bkt
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -188,58 +195,66 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
 }
 
 # Evaluate a program, given the compiler output
-{ VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+# : callbacks
+{ 
+      VM 𝕩: ⟨⟩‿⟨⟩‿⟨⟩ VM 𝕩;
+  ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+    ·‿·‿src←ctx
+    ln←1
+    #ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
+    #ln↩¯1¨⌾((¬∊ln)⊸/) ln
+    #srcln←⟨""⟩∾1↓¨src⊔˜+`src∊lf # drop newlines and offset with empty (lines are 1-based)
 
-  bodies ← {start‿vars‿names‿export:
-    # Called when the body is evaluated
-    {parent 𝕊 args:
-      env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      RunBC bc‿start‿env
-    }
-  }¨ bodyInfo
-
-  blocks ← {type‿imm‿body:
-    # Handle operands
-    inner ← imm ⊑ type ⊑ ⟨
-      2⥊⟨{𝕊n: N ⟨⟩}⟩
-      {𝕊n: {d←N 𝕣‿𝕗  ⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗  }}
-      {𝕊n: {d←N 𝕣‿𝕗‿𝕘⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗‿𝕘}}
-    ⟩
-    # Handle arguments
-    outer ← imm ⊑ ⟨
-      {
-        m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;
-        ⟨b⟩: {𝕊v: {B 𝕤‿𝕩‿(𝕨⊣nothing)∾v}}
+    bodies ← {start‿vars‿names‿export:
+      # Called when the body is evaluated
+      {parent 𝕊 args:
+        env ← MakeEnv parent‿vars‿names‿export
+        (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+        ctx RunBC bc‿start‿env‿ln
       }
-      ⊑
-    ⟩
+    }¨ bodyInfo
 
-    # Assemble bodies
-    nmc ← "No matching case"
-    Then ← {first 𝕊 next: {skipMark≢r←𝕨First𝕩 ? r ; 𝕨Next𝕩}}
-    run ← {
-      1=•Type 𝕩 ?
-      ⟨(𝕩⊑bodies) Then {!∘nmc}⟩
-    ;
-      "Internal compiler error: Invalid body indices" ! 1==𝕩
-      ! (≠𝕩) ≡ 2-imm
-      e ← {imm ? ⟨nmc⟩ ;
-        (0=≠¨𝕩) nmc⍟⊣¨ "Left argument "⊸∾¨⟨"not allowed","required"⟩
-      }𝕩
-      𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨ e
-    } body
+    blocks ← {type‿imm‿body:
+      # Handle operands
+      inner ← imm ⊑ type ⊑ ⟨
+        2⥊⟨{𝕊n: N ⟨⟩}⟩
+        {𝕊n: {d←N 𝕣‿𝕗  ⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗  }}
+        {𝕊n: {d←N 𝕣‿𝕗‿𝕘⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗‿𝕘}}
+      ⟩
+      # Handle arguments
+      outer ← imm ⊑ ⟨
+        {
+          m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;
+          ⟨b⟩: {𝕊v: {B 𝕤‿𝕩‿(𝕨⊣nothing)∾v}}
+        }
+        ⊑
+      ⟩
 
-    {𝕊 parent:
-      Inner Outer {parent˙ 𝕏 ⊢}¨ run
+      # Assemble bodies
+      nmc ← "No matching case"
+      Then ← {first 𝕊 next: {skipMark≢r←𝕨First𝕩 ? r ; 𝕨Next𝕩}}
+      run ← {
+        1=•Type 𝕩 ?
+        ⟨(𝕩⊑bodies) Then {!∘nmc}⟩
+      ;
+        "Internal compiler error: Invalid body indices" ! 1==𝕩
+        ! (≠𝕩) ≡ 2-imm
+        e ← {imm ? ⟨nmc⟩ ;
+          (0=≠¨𝕩) nmc⍟⊣¨ "Left argument "⊸∾¨⟨"not allowed","required"⟩
+        }𝕩
+        𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨ e
+      } body
+
+      {𝕊 parent:
+        Inner Outer {parent˙ 𝕏 ⊢}¨ run
+      }
+    }¨ blockInfo
+
+    program ← {
+      consts⇐consts
+      blocks⇐blocks
+      names⇐0⊑2⊑token
     }
-  }¨ blockInfo
-
-  program ← {
-    consts⇐consts
-    blocks⇐blocks
-    names⇐0⊑2⊑token
-  }
-  
-  (⊑blocks){𝔽} {program⇐program}
+    
+    (⊑blocks){𝔽} {program⇐program}
 }
