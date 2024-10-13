@@ -189,7 +189,7 @@ RunBC ← { ·‿cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting 
     #•SHow pos↓bc
     #•SHow "Stack " ∾ •Fmt stack.Show @
     l←pos⊑ln
-    {𝕊: src cb.Breakpoint env}⍟(1⊸≡) l=bkt
+    {𝕊: src cb.Breakpoint env‿l}⍟(1⊸≡) l=bkt
     # get operation from oplist, which first consumes items in the bytecode list then returns a function that operates on selected bytecodes
     op ← (Next@) ⊑ ops
     op ↩ Op next
@@ -209,19 +209,20 @@ RunBC ← { ·‿cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting 
 { 
       VM 𝕩: ⟨⟩‿⟨⟩‿⟨⟩ VM 𝕩;
   ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-    env‿·‿·‿src←ctx
+    env‿cb‿btk‿src←ctx
 
     ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
     ln↩¯1¨⌾((¬∊ln)⊸/) ln  # ensure that only one line number exists as stop marker 
+    src↩⟨""⟩∾1↓¨src⊔˜+`src∊lf # split src into lines. Drop newlines and offset with empty (lines are 1-based)
 
     bodies ← {start‿vars‿names‿export:
       # Called when the body is evaluated
       {parent 𝕊 args:
         env ← MakeEnv parent‿vars‿names‿export
-        env.SetVars { ⟨e⇐env⟩: e≢@ ? e.vars; env.vars } parent # replace variables
+        env.SetVars { ⟨e⇐env⟩: e≢@ ? e.vars; env.vars } parent # AQ: replace variables
 
         (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-        ctx RunBC bc‿start‿env‿ln
+        env‿cb‿btk‿src RunBC bc‿start‿env‿ln
       }
     }¨ bodyInfo
 

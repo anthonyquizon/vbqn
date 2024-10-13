@@ -8,7 +8,7 @@ init_c ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "i32"‿"input"‿">&u8:c8"
 
 lf←@+10‿13
-win←2
+win←2 # window of lines previous and next to current line
 
 src←@
 
@@ -29,15 +29,15 @@ system ← {𝕨⊸FindSys⊏𝕩˙}´systable
 PrintLines ← { src 𝕊 n:
   l←∾⟨¯1↓⌽n-↕win,n+↕win⟩
   l↩l/˜(l≥0)∧l<≠src
-  arr← ⊣◶""‿" <--"¨(n=l)
+  arr← ⊣◶""‿" <"¨(n=l)
   •Out ln←1↓∾lf⊸∾¨(∾⟜"   "∘•Fmt¨l) ∾¨ (src⊏˜l) ∾¨ arr
   •Out ""
 }
 
 Breakpoint←{
-  src 𝕊 env:
+  src 𝕊 env‿n:
     •Out "Breakpoint!"
-    #PrintLines src
+    src PrintLines n
     buf←' '¨↕1024
 
     #l←"{𝕊: 100+𝕩} 2"
@@ -73,8 +73,8 @@ Eval ←{
     #FIXME cleanup
     c←{ ⟨runtime, { System 𝕩 }⟩ Compile 𝕩 }⎊Catch l
     •Show { env‿cb‿@‿l VM 𝕩 }⍟(0≠≠c) c
-}
 
+}
 # f: file
 # TODO repl history
 Repl ⇐ {
@@ -83,25 +83,12 @@ Repl ⇐ {
     buf←' '¨↕1024
     { 𝕊:
       r‿l←Input_c buf # TODO convert utf-8 to Unicode code point
-      π
       •Exit⍟(¬r) r
-      •SHow l-@
+      # TODO unicode conversion
       l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
       env Eval l
     }•_while_ 1 1
 }
-
-#•SHow VM (⟨runtime, { System 𝕩 }⟩⊸Compile) "π"
-
-#env←{vars⇐⟨⟩, program⇐{consts⇐⟨⟩ ⋄ blocks⇐⟨⟩ ⋄ names⇐⟨⟩} }
-#c←⟨runtime, { System 𝕩 }⟩ Compile "π"
-#•Show env‿⟨⟩‿⟨⟩‿"@" VM c
-#Init_c ⟨⟩
-#env←{vars⇐⟨⟩, program⇐{consts⇐⟨⟩ ⋄ blocks⇐⟨⟩ ⋄ names⇐⟨⟩} }
-#env Eval ")r"
-#Repl {vars⇐⟨⟩, program⇐{consts⇐⟨⟩ ⋄ blocks⇐⟨⟩ ⋄ names⇐⟨⟩} }
-#GetLine @
-#•Show 
 
 src↩•file.Chars "../test/foo.bqn"
 c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
