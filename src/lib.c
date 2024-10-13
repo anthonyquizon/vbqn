@@ -2,11 +2,14 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <wchar.h>
+#include <locale.h>
 #include "replxx.h"
 
 Replxx* replxx;
 
 void init() {
+    setlocale(LC_CTYPE, "");
 	replxx = replxx_init();
 	replxx_install_window_change_handler(replxx);
 }

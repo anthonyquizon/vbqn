@@ -102,6 +102,7 @@ MakeEnv ← { 𝕊⟨
 
 # Return a function that reads the variable from slot s at depth d.
 # The input is taken from the bytecode stream.
+# AQ: why ·?
 VO ← { d←𝕏@, s←𝕏@, s⊑·{𝕩.vars}{𝕩.parent}⍟d }
 
 # Namespace from environment
@@ -121,6 +122,7 @@ MakeStack ← {
   s ← 𝕩                          # Stack (a list)
   cont ⇐ 1                       # Whether to continue execution
   rslt ⇐ skipMark                # Result: skipMark to abort current body
+  Show ⇐ { 𝕊: s}
   Push ⇐ {s∾↩<𝕩}                 # Push a value
   Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Peek ⇐ {𝕊:¯1⊑s}                # Return but don't pop top value
@@ -178,12 +180,15 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 
 # Reference: https://github.com/anthonyquizon/dbqn/blob/79458399f6335ee73f4248945e25240a803651d4/src/vm.bqn
 # Evaluate a body
-RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting position, environment
+RunBC ← { ·‿cb‿bkt‿src‿· 𝕊 bc‿pos‿env‿ln:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
+    #•SHow pos↓bc
+    #•SHow ⟨"--", stack.Show @⟩
     l←pos⊑ln
-    {𝕊: cb.Breakpoint env}⍟(1⊸≡) l=bkt
+    {𝕊: src cb.Breakpoint env}⍟(1⊸≡) l=bkt
+    # get operation from oplist, which first consumes items in the bytecode list then returns a function that operates on selected bytecodes
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -194,20 +199,25 @@ RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting posit
   stack.rslt
 }
 
+# Reference: https://github.com/mlochbaum/BQN/blob/master/implementation/vm.md
 # Evaluate a program, given the compiler output
 # : callbacks
 { 
       VM 𝕩: ⟨⟩‿⟨⟩‿⟨⟩ VM 𝕩;
   ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-    ·‿·‿src←ctx
+    env‿·‿·‿src‿foo←ctx
+
     ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
     ln↩¯1¨⌾((¬∊ln)⊸/) ln  # ensure that only one line number exists as stop marker 
     #srcln←⟨""⟩∾1↓¨src⊔˜+`src∊lf # drop newlines and offset with empty (lines are 1-based)
 
     bodies ← {start‿vars‿names‿export:
+      penv←env
       # Called when the body is evaluated
       {parent 𝕊 args:
         env ← MakeEnv parent‿vars‿names‿export
+        {𝕊: env↩penv} ⍟foo @
+        •Show env.vars
         (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
         ctx RunBC bc‿start‿env‿ln
       }
@@ -247,14 +257,15 @@ RunBC ← { cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting posit
       {𝕊 parent:
         Inner Outer {parent˙ 𝕏 ⊢}¨ run
       }
-    }¨ blockInfo
+    }¨blockInfo
 
     program ← {
       consts⇐consts
       blocks⇐blocks
       names⇐0⊑2⊑token
     }
-    
-    # TODO return environment
-    (⊑blocks){𝔽} {program⇐program}
+
+    (⊑blocks){𝔽} {
+      program⇐program
+    }
 }
