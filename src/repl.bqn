@@ -40,9 +40,15 @@ Breakpoint←{
     #PrintLines src
     buf←' '¨↕1024
 
-    •Show env
-    c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "b"
-    •Show { env‿cb‿0‿"a"‿1 VM 𝕩 }⍟(0≠≠c) c
+    #l←"{𝕊: 100+𝕩} 2"
+    l←"{𝕊: 100+𝕩} a"
+    #l←"b"
+    #•Show env
+    # TODO inject variables from all parent envs
+    #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "b"
+    c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile l
+    #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "a"
+    •Show { env‿cb‿0‿l VM 𝕩 }⍟(0≠≠c) c
     #{ 𝕊:
       #r‿l←Input_c buf
       #•Exit⍟(¬r) r
@@ -98,18 +104,5 @@ Repl ⇐ {
 #•Show 
 
 src↩•file.Chars "../test/foo.bqn"
-env←{vars⇐⟨⟩, program⇐{consts⇐⟨⟩ ⋄ blocks⇐⟨⟩ ⋄ names⇐⟨⟩} }
-#env←{vars⇐⟨"a"⟩, program⇐{consts⇐⟨⟩ ⋄ blocks⇐⟨⟩ ⋄ names⇐⟨⟩} }
 c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
-# get all vars from env
-# add byte code instructions to push
-env‿cb‿3‿src‿0 VM c
-#•SHow c
-
-#c0 ← ⟨runtime, { System 𝕩 }, ⟨"a"⟩⟩ Compile "a"
-#•Show env‿cb‿9‿src VM c
-## TODO see how variables are referenced at the end of a program
-#•SHow c0
-#•Out "Running program"
-#c ← ⟨runtime, { System 𝕩 }⟩ Compile src
-#env‿cb‿3‿src VM c
+@‿cb‿3‿src VM c

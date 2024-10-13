@@ -88,6 +88,8 @@ MakeEnv ← { 𝕊⟨
   parent ⇐ p
   program ⇐ p.program  # Determines the meaning of ID numbers
   vars ⇐ program⊸MakeVar¨ (ns⥊¯1) ∾ n  # Variables
+  SetProgram ⇐ { program↩𝕩 } # HACK
+  SetVars    ⇐ { vars↩𝕩 } # HACK
   # Return a namespace for this environment.
   # A namespace is represented as a namespace with one field, Field.
   # 𝕨 ns.Field 𝕩 returns the value of the field with ID 𝕩 in program 𝕨.
@@ -180,12 +182,12 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 
 # Reference: https://github.com/anthonyquizon/dbqn/blob/79458399f6335ee73f4248945e25240a803651d4/src/vm.bqn
 # Evaluate a body
-RunBC ← { ·‿cb‿bkt‿src‿· 𝕊 bc‿pos‿env‿ln:  # bytecode, starting position, environment
+RunBC ← { ·‿cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
     #•SHow pos↓bc
-    #•SHow ⟨"--", stack.Show @⟩
+    #•SHow "Stack " ∾ •Fmt stack.Show @
     l←pos⊑ln
     {𝕊: src cb.Breakpoint env}⍟(1⊸≡) l=bkt
     # get operation from oplist, which first consumes items in the bytecode list then returns a function that operates on selected bytecodes
@@ -199,25 +201,25 @@ RunBC ← { ·‿cb‿bkt‿src‿· 𝕊 bc‿pos‿env‿ln:  # bytecode, star
   stack.rslt
 }
 
+# run line
+
 # Reference: https://github.com/mlochbaum/BQN/blob/master/implementation/vm.md
 # Evaluate a program, given the compiler output
 # : callbacks
 { 
       VM 𝕩: ⟨⟩‿⟨⟩‿⟨⟩ VM 𝕩;
   ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-    env‿·‿·‿src‿foo←ctx
+    env‿·‿·‿src←ctx
 
     ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
     ln↩¯1¨⌾((¬∊ln)⊸/) ln  # ensure that only one line number exists as stop marker 
-    #srcln←⟨""⟩∾1↓¨src⊔˜+`src∊lf # drop newlines and offset with empty (lines are 1-based)
 
     bodies ← {start‿vars‿names‿export:
-      penv←env
       # Called when the body is evaluated
       {parent 𝕊 args:
         env ← MakeEnv parent‿vars‿names‿export
-        {𝕊: env↩penv} ⍟foo @
-        •Show env.vars
+        env.SetVars { ⟨e⇐env⟩: e≢@ ? e.vars; env.vars } parent # replace variables
+
         (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
         ctx RunBC bc‿start‿env‿ln
       }
@@ -266,6 +268,7 @@ RunBC ← { ·‿cb‿bkt‿src‿· 𝕊 bc‿pos‿env‿ln:  # bytecode, star
     }
 
     (⊑blocks){𝔽} {
+      env⇐env
       program⇐program
     }
 }
