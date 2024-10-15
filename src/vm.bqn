@@ -188,8 +188,8 @@ RunBC ← { ·‿cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting 
   Step ← {𝕊:
     #•SHow pos↓bc
     #•SHow "Stack " ∾ •Fmt stack.Show @
-    l←pos⊑ln
-    {𝕊: src cb.Breakpoint env‿l}⍟(1⊸≡) l=bkt
+    #l←pos⊑ln
+    #{𝕊: src cb.Breakpoint env‿l}⍟(1⊸≡) l=bkt
     # get operation from oplist, which first consumes items in the bytecode list then returns a function that operates on selected bytecodes
     op ← (Next@) ⊑ ops
     op ↩ Op next
@@ -219,7 +219,7 @@ RunBC ← { ·‿cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting 
       # Called when the body is evaluated
       {parent 𝕊 args:
         env ← MakeEnv parent‿vars‿names‿export
-        env.SetVars { ⟨e⇐env⟩: e≢@ ? e.vars; env.vars } parent # AQ: replace variables
+        env.SetVars { ⟨e⇐env⟩: e≢@ ? e.vars; env.vars } parent # HACK: FIXME at the moment, only replaces variables rather than merges
 
         (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
         env‿cb‿btk‿src RunBC bc‿start‿env‿ln

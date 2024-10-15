@@ -1,12 +1,13 @@
 
-runtime ←    •Import "./rt.bqn"     
+
+runtime ←    •Import "./rt.bqn"     # TODO replace runtime with host runtime - replacement mask with array of cbqn functions
 gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
 
 init_c ← "../lib.so" •FFI ""‿"init"
-input_c ← "../lib.so" •FFI "i32"‿"input"‿">&u8:c8"
-
+input_c ← "../lib.so" •FFI "a"‿"input"
+π
 lf←@+10‿13
 win←2 # window of lines previous and next to current line
 
@@ -41,14 +42,17 @@ Breakpoint←{
     buf←' '¨↕1024
 
     #l←"{𝕊: 100+𝕩} 2"
-    l←"{𝕊: 100+𝕩} a"
+    #l←"c←10+a ⋄ {𝕊: 100+𝕩} c"
+    #l←"c←10+a"
     #l←"b"
     #•Show env
     # TODO inject variables from all parent envs
     #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "b"
-    c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile l
+    # TODO climb parents
+    •Show env
+    #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile l
     #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "a"
-    •Show { env‿cb‿0‿l VM 𝕩 }⍟(0≠≠c) c
+    #•Show { env‿cb‿0‿l VM 𝕩 }⍟(0≠≠c) c
     #{ 𝕊:
       #r‿l←Input_c buf
       #•Exit⍟(¬r) r
@@ -81,15 +85,26 @@ Repl ⇐ {
   𝕊 env:
     Init_c ⟨⟩
     buf←' '¨↕1024
-    { 𝕊:
-      r‿l←Input_c buf # TODO convert utf-8 to Unicode code point
-      •Exit⍟(¬r) r
-      # TODO unicode conversion
-      l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
-      env Eval l
-    }•_while_ 1 1
+
+    l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
+    •Show l
+    #{ 𝕊:
+      #π
+      #l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
+      #•Show l
+      ##•Exit⍟(¬r) r
+      ## TODO unicode conversion
+      ##l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
+      ##•Show l
+      #π
+      ##env Eval l
+    #}•_while_ 1 1
 }
 
-src↩•file.Chars "../test/foo.bqn"
-c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
-@‿cb‿3‿src VM c
+Repl @
+#src↩•file.Chars "../test/foo.bqn"
+##•Show 14⊑runtime
+#runtime↩{𝕊:+}¨⌾(0⊸⊏) runtime
+#runtime↩{𝕊:↕}¨⌾(14⊸⊏) runtime
+#c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
+#@‿cb‿3‿src VM c

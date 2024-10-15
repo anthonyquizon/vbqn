@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+
+bqn src/repl.bqn << EOF
+input1
+input2
+input3
+EOF

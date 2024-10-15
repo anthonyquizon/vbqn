@@ -2,4 +2,4 @@
 export TIMEFORMAT='%3R'
 ARGS=$@
 make all
-find . -name '*.bqn' -o -name 'dbqn' | entr -r sh -c "time (bqn $ARGS)"
+find . -name '*.bqn' -o -name 'dbqn' | entr -r sh -c "time $ARGS"
