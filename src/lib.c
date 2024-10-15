@@ -83,48 +83,11 @@ void modify_callback(char** line, int* cursor_pos, void* ud) {
     }
 }
 
-ReplxxActionResult key_press_handler(int ignored, void* ud) {
-   	Replxx* replxx = (Replxx*)ud;
-	ReplxxState state;
-	replxx_get_state( replxx, &state );
-    //get next char
-	int l = (int)strlen( state.text );
-	/*char* d = strdup( state.text );*/
-	/*for ( int i = 0; i < l; ++ i ) {*/
-		/*d[i] = toupper( d[i] );*/
-	/*}*/
-    char pi_utf8[] = {0xCF, 0x80, 0};
-	char* d = strdup( pi_utf8 );
-	state.text = d;
-	/*state.cursorPosition /= 2;*/
-	replxx_set_state( replxx, &state );
-	free( d );
-    return ( REPLXX_ACTION_RESULT_CONTINUE );
-
-    /*if (c == '\\') {*/
-        /*// Read next character*/
-        /*int next_char = replxx_input_key();*/
-        /*if (next_char == 'p') {*/
-            /*replxx_insert(replxx, "π");*/
-        /*} else {*/
-            /*// If not a match, insert both characters*/
-            /*char buf[2] = { '\\', 0 };*/
-            /*replxx_insert(replxx, buf);*/
-            /*buf[0] = (char)next_char;*/
-            /*replxx_insert(replxx, buf);*/
-        /*}*/
-    /*} else {*/
-        /*char buf[2] = { c, 0 };*/
-        /*replxx_insert(replxx, buf);*/
-    /*}*/
-}
-
 void init() {
     setlocale(LC_CTYPE, "");
 	replxx = replxx_init();
 	replxx_install_window_change_handler(replxx);
     replxx_set_modify_callback(replxx, modify_callback, NULL);
-    /*replxx_bind_key(replxx, '\\', key_press_handler, replxx);*/
 }
 
 const BQNV input() {
