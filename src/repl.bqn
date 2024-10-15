@@ -86,6 +86,7 @@ Repl ⇐ {
 
     { 𝕊:
       l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
+      π
       •Show l
       •Exit⍟(l=0) 0
       #env Eval l
@@ -94,8 +95,8 @@ Repl ⇐ {
 
 Repl @
 #src↩•file.Chars "../test/foo.bqn"
-##•Show 14⊑runtime
-#runtime↩{𝕊:+}¨⌾(0⊸⊏) runtime
-#runtime↩{𝕊:↕}¨⌾(14⊸⊏) runtime
+###•Show 14⊑runtime
+##runtime↩{𝕊:+}¨⌾(0⊸⊏) runtime
+##runtime↩{𝕊:↕}¨⌾(14⊸⊏) runtime
 #c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
 #@‿cb‿3‿src VM c

@@ -4,7 +4,7 @@ mkShell {
     entr
     clang
     replxx
-    #lldb
+    lldb
     libffi
   ];
 }

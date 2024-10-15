@@ -1,5 +1,6 @@
 _extern/
 _scratch*
 
+*.dSYM/
 replxx_history.txt
 lib.so
