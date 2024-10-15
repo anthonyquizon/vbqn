@@ -39,7 +39,6 @@ Breakpoint←{
   src 𝕊 env‿n:
     •Out "Breakpoint!"
     src PrintLines n
-    buf←' '¨↕1024
 
     #l←"{𝕊: 100+𝕩} 2"
     #l←"c←10+a ⋄ {𝕊: 100+𝕩} c"
@@ -84,21 +83,13 @@ Eval ←{
 Repl ⇐ {
   𝕊 env:
     Init_c ⟨⟩
-    buf←' '¨↕1024
 
-    l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
-    •Show l
-    #{ 𝕊:
-      #π
-      #l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
-      #•Show l
-      ##•Exit⍟(¬r) r
-      ## TODO unicode conversion
-      ##l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
-      ##•Show l
-      #π
-      ##env Eval l
-    #}•_while_ 1 1
+    { 𝕊:
+      l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
+      •Show l
+      •Exit⍟(l=0) 0
+      #env Eval l
+    }•_while_ 1 1
 }
 
 Repl @
