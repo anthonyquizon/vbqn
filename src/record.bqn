@@ -7,8 +7,9 @@ global  ←    •Import "./global.bqn"
 ⟨system⟩ ← •Import "./system.bqn"
 
 file←"../test/foo.bqn"
-global.SetCWD •file.Parent file
-
+cwd←•file.Parent file
 src←•file.Chars file
+global.ctx.Push ⟨cwd,src⟩
+
 c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
 •Show VM c

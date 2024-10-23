@@ -7,6 +7,10 @@
 # - SetU: Change value
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
+
+global←•Import "global.bqn"
+
+# TODO record slots?
 MakeVar ← { program 𝕊 name:
   v←@  # Value
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
