@@ -1,3 +1,7 @@
+
+
+lf←@+10‿13
+
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -84,6 +88,8 @@ MakeEnv ← { 𝕊⟨
   parent ⇐ p
   program ⇐ p.program  # Determines the meaning of ID numbers
   vars ⇐ program⊸MakeVar¨ (ns⥊¯1) ∾ n  # Variables
+  SetProgram ⇐ { program↩𝕩 } # HACK
+  SetVars    ⇐ { vars↩𝕩 } # HACK
   # Return a namespace for this environment.
   # A namespace is represented as a namespace with one field, Field.
   # 𝕨 ns.Field 𝕩 returns the value of the field with ID 𝕩 in program 𝕨.
@@ -98,6 +104,7 @@ MakeEnv ← { 𝕊⟨
 
 # Return a function that reads the variable from slot s at depth d.
 # The input is taken from the bytecode stream.
+# AQ: why ·?
 VO ← { d←𝕏@, s←𝕏@, s⊑·{𝕩.vars}{𝕩.parent}⍟d }
 
 # Namespace from environment
@@ -117,6 +124,7 @@ MakeStack ← {
   s ← 𝕩                          # Stack (a list)
   cont ⇐ 1                       # Whether to continue execution
   rslt ⇐ skipMark                # Result: skipMark to abort current body
+  Show ⇐ { 𝕊: s}
   Push ⇐ {s∾↩<𝕩}                 # Push a value
   Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Peek ⇐ {𝕊:¯1⊑s}                # Return but don't pop top value
@@ -163,8 +171,8 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   44‿(       {s𝕊e: s.Push ref.not }˙)
   # Assignment
   47‿(       {s𝕊e: s.Skip⍟⊢{r‿  v: r.SetQ   v           } s.Pop 2 }˙)  # r:
-  48‿(       {s𝕊e: s.Push { r‿  v: r.SetN⊸⊢ v           } s.Pop 2 }˙)  # r  ←v
-  49‿(       {s𝕊e: s.Push { r‿  v: r.SetU⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
+  48‿(       {s𝕊e: s.Push { r‿  v: r.SetN⊸⊢ v           } s.Pop 2 }˙)  # r  ←v # Store history in db
+  49‿(       {s𝕊e: s.Push { r‿  v: r.SetU⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v # Store history in db
   50‿(       {s𝕊e: s.Push { r‿f‿x: r.SetU⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
   51‿(       {s𝕊e: s.Push { r‿f  : r.SetU⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
   # Namespaces
@@ -172,11 +180,17 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
+# Reference: https://github.com/anthonyquizon/dbqn/blob/79458399f6335ee73f4248945e25240a803651d4/src/vm.bqn
 # Evaluate a body
-RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
+RunBC ← { ·‿cb‿bkt‿src 𝕊 bc‿pos‿env‿ln:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
+    #•SHow pos↓bc
+    #•SHow "Stack " ∾ •Fmt stack.Show @
+    #l←pos⊑ln
+    #{𝕊: src cb.Breakpoint env‿l}⍟(1⊸≡) l=bkt
+    # get operation from oplist, which first consumes items in the bytecode list then returns a function that operates on selected bytecodes
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -187,59 +201,75 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   stack.rslt
 }
 
+# run line
+
+# Reference: https://github.com/mlochbaum/BQN/blob/master/implementation/vm.md
 # Evaluate a program, given the compiler output
-{ VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+# : callbacks
+{ 
+      VM 𝕩: ⟨⟩‿⟨⟩‿⟨⟩ VM 𝕩;
+  ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+    env‿cb‿btk‿src←ctx
 
-  bodies ← {start‿vars‿names‿export:
-    # Called when the body is evaluated
-    {parent 𝕊 args:
-      env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      RunBC bc‿start‿env
-    }
-  }¨ bodyInfo
+    ln←1+(0⊑loc)⊏+`src∊lf # convert locs to line numbers
+    ln↩¯1¨⌾((¬∊ln)⊸/) ln  # ensure that only one line number exists as stop marker 
+    src↩⟨""⟩∾1↓¨src⊔˜+`src∊lf # split src into lines. Drop newlines and offset with empty (lines are 1-based)
 
-  blocks ← {type‿imm‿body:
-    # Handle operands
-    inner ← imm ⊑ type ⊑ ⟨
-      2⥊⟨{𝕊n: N ⟨⟩}⟩
-      {𝕊n: {d←N 𝕣‿𝕗  ⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗  }}
-      {𝕊n: {d←N 𝕣‿𝕗‿𝕘⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗‿𝕘}}
-    ⟩
-    # Handle arguments
-    outer ← imm ⊑ ⟨
-      {
-        m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;
-        ⟨b⟩: {𝕊v: {B 𝕤‿𝕩‿(𝕨⊣nothing)∾v}}
+    bodies ← {start‿vars‿names‿export:
+      # Called when the body is evaluated
+      {parent 𝕊 args:
+        env ← MakeEnv parent‿vars‿names‿export
+        env.SetVars { ⟨e⇐env⟩: e≢@ ? e.vars; env.vars } parent # HACK: FIXME at the moment, only replaces variables rather than merges
+
+        (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+        env‿cb‿btk‿src RunBC bc‿start‿env‿ln
       }
-      ⊑
-    ⟩
+    }¨ bodyInfo
 
-    # Assemble bodies
-    nmc ← "No matching case"
-    Then ← {first 𝕊 next: {skipMark≢r←𝕨First𝕩 ? r ; 𝕨Next𝕩}}
-    run ← {
-      1=•Type 𝕩 ?
-      ⟨(𝕩⊑bodies) Then {!∘nmc}⟩
-    ;
-      "Internal compiler error: Invalid body indices" ! 1==𝕩
-      ! (≠𝕩) ≡ 2-imm
-      e ← {imm ? ⟨nmc⟩ ;
-        (0=≠¨𝕩) nmc⍟⊣¨ "Left argument "⊸∾¨⟨"not allowed","required"⟩
-      }𝕩
-      𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨ e
-    } body
+    blocks ← {type‿imm‿body:
+      # Handle operands
+      inner ← imm ⊑ type ⊑ ⟨
+        2⥊⟨{𝕊n: N ⟨⟩}⟩
+        {𝕊n: {d←N 𝕣‿𝕗  ⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗  }}
+        {𝕊n: {d←N 𝕣‿𝕗‿𝕘⋄𝕨D𝕩}}‿{𝕊n: {N 𝕣‿𝕗‿𝕘}}
+      ⟩
+      # Handle arguments
+      outer ← imm ⊑ ⟨
+        {
+          m‿d: {𝕊v: {M 𝕤‿𝕩‿nothing∾v;D 𝕤‿𝕩‿𝕨∾v}} ;
+          ⟨b⟩: {𝕊v: {B 𝕤‿𝕩‿(𝕨⊣nothing)∾v}}
+        }
+        ⊑
+      ⟩
 
-    {𝕊 parent:
-      Inner Outer {parent˙ 𝕏 ⊢}¨ run
+      # Assemble bodies
+      nmc ← "No matching case"
+      Then ← {first 𝕊 next: {skipMark≢r←𝕨First𝕩 ? r ; 𝕨Next𝕩}}
+      run ← {
+        1=•Type 𝕩 ?
+        ⟨(𝕩⊑bodies) Then {!∘nmc}⟩
+      ;
+        "Internal compiler error: Invalid body indices" ! 1==𝕩
+        ! (≠𝕩) ≡ 2-imm
+        e ← {imm ? ⟨nmc⟩ ;
+          (0=≠¨𝕩) nmc⍟⊣¨ "Left argument "⊸∾¨⟨"not allowed","required"⟩
+        }𝕩
+        𝕩 Then´⟜(⊏⟜bodies)˜⟜{!∘𝕩}¨ e
+      } body
+
+      {𝕊 parent:
+        Inner Outer {parent˙ 𝕏 ⊢}¨ run
+      }
+    }¨blockInfo
+
+    program ← {
+      consts⇐consts
+      blocks⇐blocks
+      names⇐0⊑2⊑token
     }
-  }¨ blockInfo
 
-  program ← {
-    consts⇐consts
-    blocks⇐blocks
-    names⇐0⊑2⊑token
-  }
-  
-  (⊑blocks){𝔽} {program⇐program}
+    (⊑blocks){𝔽} {
+      env⇐env
+      program⇐program
+    }
 }

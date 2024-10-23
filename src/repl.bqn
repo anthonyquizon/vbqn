@@ -35,60 +35,22 @@ PrintLines ← { src 𝕊 n:
   •Out ""
 }
 
-Breakpoint←{
-  src 𝕊 env‿n:
-    •Out "Breakpoint!"
-    src PrintLines n
-
-    #l←"{𝕊: 100+𝕩} 2"
-    #l←"c←10+a ⋄ {𝕊: 100+𝕩} c"
-    #l←"c←10+a"
-    #l←"b"
-    #•Show env
-    # TODO inject variables from all parent envs
-    #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "b"
-    # TODO climb parents
-    •Show env
-    #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile l
-    #c←⟨runtime, { System 𝕩 }, ⟨"a", "b"⟩⟩ Compile "a"
-    #•Show { env‿cb‿0‿l VM 𝕩 }⍟(0≠≠c) c
-    #{ 𝕊:
-      #r‿l←Input_c buf
-      #•Exit⍟(¬r) r
-      #l↩{⟨⟩:"";l↑˜⊑𝕩}/l=@+0
-
-    #}•_while_ 1 1
-}
-
-cb←{Breakpoint⇐Breakpoint} # callbacks
-
+cb←@ # TODO delete
 # TODO line /character positions
 Catch←{𝕊: •Out "Error: " ∾ •Fmt •CurrentError @ ⋄ ⟨⟩}
 
-Eval ←{
-       · 𝕊 ⟨⟩ : ⟨⟩
-  ;  env 𝕊 𝕩 : 𝕩≡")r" ? 
-      •Out "Running program"
-      c ← ⟨runtime, { System 𝕩 }⟩ Compile src
-      env‿cb‿3‿src VM c
-  ; env 𝕊 l:
-    # TODO merge env
-    #FIXME cleanup
-    c←{ ⟨runtime, { System 𝕩 }⟩ Compile 𝕩 }⎊Catch l
-    •Show { env‿cb‿@‿l VM 𝕩 }⍟(0≠≠c) c
-
-}
 # f: file
 # TODO repl history
 Repl ⇐ {
   𝕊 env:
     Init_c ⟨⟩
 
+    F←•ReBqn {repl⇐"loose"}
+    # TODO load data
     { 𝕊:
       l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
-      π
-      •Show l
       •Exit⍟(l=0) 0
+      F l
       #env Eval l
     }•_while_ 1 1
 }
