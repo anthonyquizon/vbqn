@@ -1,3 +1,4 @@
+# Store cwd and src in stack
 MakeStack ← {
   s ← 𝕩                          # Stack (a list)
   Push ⇐ {s∾↩<𝕩}                 # Push a value
@@ -6,4 +7,7 @@ MakeStack ← {
 }
 
 ctx⇐MakeStack ⟨⟩
+
+
+# record
 

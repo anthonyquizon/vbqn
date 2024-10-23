@@ -118,7 +118,7 @@ skipMark ← {⇐}  # Indicates body aborted instead of returning
 
 # Execution stack: every body evaluation makes one of these
 MakeStack ← {
-  s ← 𝕩                          # Stack (a list)
+  s ⇐ 𝕩                          # Stack (a list)
   cont ⇐ 1                       # Whether to continue execution
   rslt ⇐ skipMark                # Result: skipMark to abort current body
   Push ⇐ {s∾↩<𝕩}                 # Push a value
@@ -181,6 +181,8 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
+    #•Show stack.s
+    #•Show pos↓bc
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -193,11 +195,12 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
 
 # Evaluate a program, given the compiler output
 { VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
+      #•Show "body"‿args‿vars
       env ← MakeEnv parent‿vars‿names‿export
+      #•Show env.vars
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
       RunBC bc‿start‿env
     }

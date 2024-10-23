@@ -1,14 +1,21 @@
-runtime ←    •Import "./rt.bqn"     # TODO replace runtime with host runtime - replacement mask with array of cbqn functions
 gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
 global  ←    •Import "./global.bqn"
+
+system⇐@
+runtime⇐⟨
+ +,-,×,÷,⋆,√,⌊,⌈,|,¬,∧,∨,<,>,≠,=,≤,≥,≡,≢,⊣,⊢,⥊,∾,≍,⋈,↑,↓,↕,«,»,⌽,⍉,/,⍋,⍒,⊏,⊑,⊐,⊒,∊,⍷,⊔,!,
+ ˙,˜,˘,¨,⌜,⁼,´,˝,`,
+ ∘,○,⊸,⟜,⌾,⊘,◶,⎉,⚇,⍟,⎊,
+⟩
 
 imp←⟨⟩ •HashMap ⟨⟩ #cached imported files
 
 Import ← {
   # TODO import with args
   # TODO store call in graph
+
   imp.Has 𝕩 ? imp.Get 𝕩;
   𝕩 : 
     ⟨cwd, ·⟩←global.ctx.Peek @
@@ -38,5 +45,5 @@ FindSys ← {
   i
 }
 
-system ⇐ { 𝕨⊸FindSys⊏𝕩˙ }´systable
+system↩{ 𝕨⊸FindSys⊏𝕩˙ }´systable
 

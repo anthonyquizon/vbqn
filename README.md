@@ -12,4 +12,5 @@ loc: ⟨bytecode character start position, bytecode character end position⟩
 
     - assign snapshots to blocks?
         - sideeffects dependent on block snapshots?
+        - store by loc and call count
 
