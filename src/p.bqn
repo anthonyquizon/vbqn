@@ -1,7 +1,4 @@
-gl      ←    •Import "./glyphs.bqn"
-compile ← gl •Import "./c.bqn"
-vm      ←    •Import "./vm.bqn"
-global  ←    •Import "./global.bqn"
+engine ← •Import "./e.bqn"
 
 system⇐@
 runtime⇐⟨
@@ -10,25 +7,13 @@ runtime⇐⟨
  ∘,○,⊸,⟜,⌾,⊘,◶,⎉,⚇,⍟,⎊,
 ⟩
 
-imp←⟨⟩ •HashMap ⟨⟩ #cached imported files
+import_cache←⟨⟩ •HashMap ⟨⟩ #cached imported files
 
 Import ← {
-  # TODO import with args
-  # TODO store call in graph
-
-  imp.Has 𝕩 ? imp.Get 𝕩;
+  import_cache.Has 𝕩 ? import_cache.Get 𝕩;
   𝕩 : 
-    ⟨cwd, ·⟩←global.ctx.Peek @
-
-    file←cwd∾𝕩
-    src←•file.Chars file
-    cwd↩•file.Parent file
-    global.ctx.Push ⟨cwd,src⟩
-
-    c← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
-    r←VM c
-    global.ctx.Pop 1
-    𝕩 imp.Set r
+    r←⟨system, runtime⟩ engine.Run 𝕩
+    𝕩 import_cache.Set r
     r
 }
 # Lookup table

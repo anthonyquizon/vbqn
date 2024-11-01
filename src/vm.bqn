@@ -8,11 +8,10 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 
-global←•Import "global.bqn"
+state←•Import "s.bqn"
 
-# TODO record slots?
 MakeVar ← { program 𝕊 name:
-  v←@  # Value
+  v⇐@  # Value
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
@@ -193,16 +192,32 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   stack.rslt
 }
 
+VarTree←{
+  # TODO save into history with depth
+  •Show {𝕩.v}¨ 𝕩.vars
+  {VarTree 𝕩.parent}⍟(𝕩 •ns.Has "parent") 𝕩
+}
+
 # Evaluate a program, given the compiler output
 { VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
-      #•Show "body"‿args‿vars
+      ⟨·,·,file⟩← state.ctx.Peek @
+      # TODO store line number and filename as key
+      #id←•Hash loc∾file
+
+      #•SHow id
+      #•Show ⊑⟜src¨start⊸⊑¨loc
+      # TODO hash loc and filepath 
+      # TODO record input
+      # TODO record input
       env ← MakeEnv parent‿vars‿names‿export
-      #•Show env.vars
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      RunBC bc‿start‿env
+      # Record side effects to history
+      out←RunBC bc‿start‿env
+      # TODO record out
+      out
     }
   }¨ bodyInfo
 
@@ -248,5 +263,5 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
     names⇐0⊑2⊑token
   }
   
-  (⊑blocks){𝔽} {program⇐program}
+  (⊑blocks){𝔽} {program⇐program, vars⇐⟨⟩}
 }

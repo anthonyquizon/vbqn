@@ -1,16 +1,15 @@
 
 # Notes
 
+**src**
+- e         compiler/vm runner
+- s         file state and recorder
+- r         repl
+
 loc: ⟨bytecode character start position, bytecode character end position⟩
 
-- record and replay implementation?
-    - record sideeffects
-        - system functions (ie. FFI, IO)
-        - reassignments?
-    - record non primitive function inputs and outputs?
-    - record checkpoints?
 
-    - assign snapshots to blocks?
-        - sideeffects dependent on block snapshots?
-        - store by loc and call count
+- property based testing?
+- mutation testing?
+    - https://www.youtube.com/watch?v=Ed6Ocs3U1v4
 
