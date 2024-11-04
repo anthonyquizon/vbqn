@@ -1,8 +1,9 @@
+⟨Fmt⟩←•Import "str.bqn"
 
-cm      ⇐ ⟨⟩ •HashMap ⟨⟩ # count of each function call
-vm      ⇐ ⟨⟩ •HashMap ⟨⟩ # variables and arguments
+varm    ⇐ ⟨⟩ •HashMap ⟨⟩ # variables and arguments
 idm     ⇐ ⟨⟩ •HashMap ⟨⟩
 outm    ⇐ ⟨⟩ •HashMap ⟨⟩
+linem   ⇐ ⟨⟩ •HashMap ⟨⟩
 history ⇐ ⟨⟩
 
 MakeStack ← {
@@ -24,6 +25,8 @@ ctx ⇐ {
   Pop  ⇐ s.Pop
 }
 
+Update ← { m‿k 𝕊 v: m.Has◶{𝕩 m.Set v ⋄ v}‿m.Get k }
+
 # Hash: start‿filename‿c
 bodies ⇐ {
   s⇐ MakeStack ⟨⟩
@@ -31,12 +34,7 @@ bodies ⇐ {
   Push⇐{
     start‿args←𝕩
       ⟨·,·,file⟩ ←ctx.Peek @
-      i ← start∾⟨file⟩
-      j  ← cm.Has◶{𝕩 cm.Set 0 ⋄ 0}‿cm.Get i
-      i cm.Set j+1
-      id ← (idm.Count @)
-      (i∾j) idm.Set id
-
+      id←idm‿(start∾⟨file⟩) Update (idm.Count @)
       history ∾⟜(⟨id⟩)↩
       s.Push id
   }
@@ -44,50 +42,49 @@ bodies ⇐ {
   Pop⇐{ (⊑s.Pop 1) outm.Set 𝕩 }
 
   Rec⇐{
-    id ←s.Peek @
-    (id∾𝕨) vm.Set 𝕩
+    id ←s.Peek @ ⋄ i←1-˜≠history
+    (i‿id‿𝕨) varm.Set 𝕩
   }
 }
+
 
 # i32:c8 → i32: the c data type that is converted to and c8: the bqn data type that is converted from
 sql⇐{
   sqlite_init_c  ← "../lib.so" •FFI "u64"‿"sqlite_init"‿"*u8:c8"
-  sqlite_exec_c  ← "../lib.so" •FFI "u64"‿"sqlite_exec"‿"*u8:c8"
+  sqlite_exec_c  ← "../lib.so" •FFI "u64"‿"sqlite_exec"‿"*u32:c32"
   sqlite_close_c ← "../lib.so" •FFI ""‿"sqlite_close"
 
   Init  ⇐ { Sqlite_init_c ⟨𝕩∾@+0⟩ }
   Exec  ⇐ { Sqlite_exec_c ⟨𝕩∾@+0⟩ }
   Close ⇐ { 𝕊: Sqlite_close_c ⟨⟩ }
   Populate ⇐ { 𝕊:
-    "v"‿"out"‿"idm"{•Show 𝕨 ⋄ •Show >(𝕩.Keys @)‿(𝕩.Values @)}¨vm‿outm‿idm
-    •Show history
-    •Show "--"
+    #"v"‿"out"‿"idm"{•Show 𝕨 ⋄ •Show >(𝕩.Keys @)‿(𝕩.Values @)}¨varm‿outm‿idm
 
     •SH "rm"‿"-r"‿"_data/db"
 
     sql.Init "_data/db"
+    #•Show ≠•FChars "tables.sql"
     sql.Exec •FChars "tables.sql"
 
-    # "create table if not exists foo (a string, b int, c double)"
-    #sql.Exec "
-      #insert into foo (a, b, c) values ('foo', 222, 1.2);
-      #insert into foo (a, b, c) values ('foo', 999, 1.2);
-      #insert into foo (a, b, c) values ('foo', 0, 1.2);
-      #insert into foo (a, b, c) values ('foo', 123, 1.2);
-      #insert into foo (a, b, c) values ('foo', 223, 1.2);
+    # insert body info
+    (idm.Keys@) {
+      start‿filename 𝕊 id:
+        sql.Exec "insert into bodies(id, start, filename) values ({}, {}, '{}')" Fmt id‿start‿filename
+    }¨idm.Values @
 
-    #"
+    # insert variables
+    (•Show varm.Keys @){ 
+      #𝕨 𝕊 "{⇐}": 𝕨 𝕊 "!_";
+      call‿id‿name 𝕊 val:
+        sql.Exec "insert into vars(body, call, name, value) values ({}, {}, '{}', '{}')" Fmt id‿call‿name‿(•Fmt val)
+    } ¨•Fmt¨varm.Values @
 
-    files←⍷1⊸⊑¨idm.Keys @
-    vars←1⊑¨vm.Keys @
-    vals←vm.Values @
-
-    •SHow "foo"⊸⍷¨files
-
-    #•Show vals/˜vars='𝕩'∧file=''
-    # order by history
-    # (vars=a)∧(file="foo*")
+    # insert history
+    { sql.Exec "insert into history(body) values ({})" Fmt ⟨𝕩⟩ } ¨history
   }
 }
+
+# select all vars from function and how many times called
+
 
 

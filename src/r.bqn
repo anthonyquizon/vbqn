@@ -7,7 +7,6 @@ vm      ←    •Import "./vm.bqn"
 
 init_c ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "a"‿"input"
-π
 lf←@+10‿13
 win←2 # window of lines previous and next to current line
 

@@ -1,5 +1,4 @@
 #! /usr/bin/env bash
 export TIMEFORMAT='%3R'
 ARGS=$@
-make all
-find . -name '*.bqn' -o -name 'dbqn' -o -name '*.sql' | entr -r sh -c "time $ARGS"
+find . -name '*.bqn' -o -name 'dbqn' -o -name '*.sql' -o -name '*.c' | entr -r sh -c "time (make all && $ARGS)"

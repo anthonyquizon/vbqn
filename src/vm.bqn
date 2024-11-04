@@ -207,7 +207,7 @@ RecTree←{
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
       state.bodies.Push start‿args
-      "𝕩𝕨" state.bodies.Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
+      ⟨"𝕩","𝕨"⟩ state.bodies.Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
 
       out←RunBC bc‿start‿env
       state.bodies.Pop out

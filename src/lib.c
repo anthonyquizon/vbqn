@@ -45,6 +45,22 @@ i32 decode_code_point(const char **s) {
     return value;
 }
 
+void encode_code_point(char **s, char *end, int code) {
+    char val[4];
+    int lead_byte_max = 0x7F;
+    int val_index = 0;
+    while (code > lead_byte_max) {
+        val[val_index++] = (code & 0x3F) | 0x80;
+        code >>= 6;
+        lead_byte_max >>= (val_index == 1 ? 2 : 1);
+    }
+    val[val_index++] = (code & lead_byte_max) | (~lead_byte_max << 1);
+    while (val_index-- && *s < end) {
+        **s = val[val_index];
+        (*s)++;
+    }
+}
+
 /*
  * Removes current char and replaces with utf8 string
  */
@@ -110,22 +126,6 @@ const BQNV input() {
  */
 sqlite3 *db;
 
-/*
- * HACK: extract as strings for now for quick code
- */
-/*static i32 callback(void *data, i32 argc, char **argv, char **azColName){*/
-    /*Buffer* buf=(Buffer*)data;*/
-
-    /*for(i32 i=0; i<argc; i++) {*/
-        /*strcpy(&buf->d[buf->i], argv[i]);*/
-        /*buf->i+=strlen(argv[i])+1;*/
-        /*assert(buf->n>buf->i && "too many items for buffer");*/
-    /*}*/
-    /*buf->d[(buf->i++)]='\0';*/
-    /*assert(buf->n>buf->i && "too many items for buffer");*/
-    /*return 0;*/
-/*}*/
-
 u32 sqlite_init(const char* name) {
     u32 err=sqlite3_open(name, &db);
     if (err) {
@@ -138,9 +138,23 @@ u32 sqlite_init(const char* name) {
 
 void sqlite_close() { sqlite3_close(db); }
 
-void sqlite_exec(const char* query) {
+#define BUFFER_LEN 5000
+//FIXME allow unicode inserts
+void sqlite_exec(i32* query) {
+    i32 *code_point_cursor = query;  // Copy of the base pointer so we can move this one around.
+    char utf8_bytes[BUFFER_LEN];
+    char* start_byte=utf8_bytes;
+    char *end_byte = utf8_bytes + BUFFER_LEN;
+
+    do {
+        encode_code_point(&start_byte, end_byte, *code_point_cursor++);
+    } while (*(code_point_cursor - 1));
+    *code_point_cursor='\0';
+
+    printf("UTF-8: %s\n", utf8_bytes);
+
     char *zErrMsg = 0;
-    i32 res = sqlite3_exec(db, query, NULL, NULL, &zErrMsg);
+    i32 res = sqlite3_exec(db, utf8_bytes, NULL, NULL, &zErrMsg);
     if (res != SQLITE_OK){
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
