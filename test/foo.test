@@ -3,5 +3,7 @@
 cd "$(dirname "$0")"
 
 ../dbqn foo.bqn << EOF
-)l
+)r foo
+
+•Show "woo"
 EOF
