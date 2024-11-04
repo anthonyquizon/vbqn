@@ -63,9 +63,12 @@ sql⇐{
     •Show history
     •Show "--"
 
-    •SHow •FChars "tables.sql"
-    sql.Init "db"
-    #sql.Exec "create table if not exists foo (a string, b int, c double)"
+    •SH "rm"‿"-r"‿"_data/db"
+
+    sql.Init "_data/db"
+    sql.Exec •FChars "tables.sql"
+
+    # "create table if not exists foo (a string, b int, c double)"
     #sql.Exec "
       #insert into foo (a, b, c) values ('foo', 222, 1.2);
       #insert into foo (a, b, c) values ('foo', 999, 1.2);
