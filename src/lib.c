@@ -151,7 +151,7 @@ void sqlite_exec(i32* query) {
     } while (*(code_point_cursor - 1));
     *code_point_cursor='\0';
 
-    printf("UTF-8: %s\n", utf8_bytes);
+    /*printf("UTF-8: %s\n", utf8_bytes);*/
 
     char *zErrMsg = 0;
     i32 res = sqlite3_exec(db, utf8_bytes, NULL, NULL, &zErrMsg);

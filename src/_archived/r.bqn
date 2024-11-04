@@ -1,10 +1,4 @@
 
-
-runtime ←    •Import "./rt.bqn"     # TODO replace runtime with host runtime - replacement mask with array of cbqn functions
-gl      ←    •Import "./glyphs.bqn"
-compile ← gl •Import "./c.bqn"
-vm      ←    •Import "./vm.bqn"
-
 init_c ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "a"‿"input"
 lf←@+10‿13
@@ -55,6 +49,12 @@ Repl ⇐ {
 }
 
 Repl @
+
+# TODO query sql
+  # if none reified: 
+    # run functions with call values again
+
+
 #src↩•file.Chars "../test/foo.bqn"
 ###•Show 14⊑runtime
 ##runtime↩{𝕊:+}¨⌾(0⊸⊏) runtime

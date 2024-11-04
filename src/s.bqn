@@ -1,4 +1,4 @@
-⟨Fmt⟩←•Import "str.bqn"
+⟨⟨Fmt⟩⇐strings⟩←•Import "util.bqn"
 
 varm    ⇐ ⟨⟩ •HashMap ⟨⟩ # variables and arguments
 idm     ⇐ ⟨⟩ •HashMap ⟨⟩
@@ -63,7 +63,6 @@ sql⇐{
     •SH "rm"‿"-r"‿"_data/db"
 
     sql.Init "_data/db"
-    #•Show ≠•FChars "tables.sql"
     sql.Exec •FChars "tables.sql"
 
     # insert body info
@@ -73,18 +72,13 @@ sql⇐{
     }¨idm.Values @
 
     # insert variables
-    (•Show varm.Keys @){ 
-      #𝕨 𝕊 "{⇐}": 𝕨 𝕊 "!_";
+    (varm.Keys @){ 
       call‿id‿name 𝕊 val:
-        sql.Exec "insert into vars(body, call, name, value) values ({}, {}, '{}', '{}')" Fmt id‿call‿name‿(•Fmt val)
+        sql.Exec "insert into vars(body, call, name, value, reified) values ({}, {}, '{}', '{}', true)" Fmt id‿call‿name‿(•Fmt val)
     } ¨•Fmt¨varm.Values @
 
     # insert history
     { sql.Exec "insert into history(body) values ({})" Fmt ⟨𝕩⟩ } ¨history
   }
 }
-
-# select all vars from function and how many times called
-
-
 

@@ -1,1 +1,10 @@
-bqn dbqn.bqn $@ && sqlite3 db
+#! /usr/bin/env bqn
+
+#engine ← •Import "./src/e.bqn"
+#⟨sql⟩ ← •Import "./src/s.bqn"
+repl ← •Import "./src/repl.bqn"
+#⟨system, runtime⟩ ← •Import "./src/p.bqn"
+#⟨system, runtime⟩ engine.Run ⊑•args
+
+#sql.Populate @
+repl.Run @
