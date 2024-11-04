@@ -157,6 +157,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   23‿(       {s𝕊e: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
   22‿(       {s𝕊e: "Left argument required" ! nothing≢s.Peek@ }˙)
   # Variables
+  # TODO record 
   32‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).Get @ } }
   34‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).GetC@ } }
   33‿{v←VO𝕩⋄ {s𝕊e: s.Push  V e        } }
@@ -192,10 +193,9 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   stack.rslt
 }
 
-VarTree←{
-  # TODO save into history with depth
-  •Show {𝕩.v}¨ 𝕩.vars
-  {VarTree 𝕩.parent}⍟(𝕩 •ns.Has "parent") 𝕩
+RecTree←{
+  {state.bodies.Rec 𝕩.v}¨𝕩.vars
+  {RecTree 𝕩.parent}⍟(𝕩 •ns.Has "parent") 𝕩
 }
 
 # Evaluate a program, given the compiler output
@@ -203,20 +203,14 @@ VarTree←{
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
-      ⟨·,·,file⟩← state.ctx.Peek @
-      # TODO store line number and filename as key
-      #id←•Hash loc∾file
-
-      #•SHow id
-      #•Show ⊑⟜src¨start⊸⊑¨loc
-      # TODO hash loc and filepath 
-      # TODO record input
-      # TODO record input
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      # Record side effects to history
+
+      state.bodies.Push start‿args
+      "𝕩𝕨" state.bodies.Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
+
       out←RunBC bc‿start‿env
-      # TODO record out
+      state.bodies.Pop out
       out
     }
   }¨ bodyInfo

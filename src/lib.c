@@ -6,6 +6,7 @@
 #include <wchar.h>
 #include <locale.h>
 #include "replxx.h"
+#include "sqlite3.h"
 #include "bqnffi.h"
 
 Replxx* replxx;
@@ -103,6 +104,49 @@ const BQNV input() {
 
     return bqn_makeC32Vec(n, buffer);
 }
+
+/*
+ * SQLite
+ */
+sqlite3 *db;
+
+/*
+ * HACK: extract as strings for now for quick code
+ */
+/*static i32 callback(void *data, i32 argc, char **argv, char **azColName){*/
+    /*Buffer* buf=(Buffer*)data;*/
+
+    /*for(i32 i=0; i<argc; i++) {*/
+        /*strcpy(&buf->d[buf->i], argv[i]);*/
+        /*buf->i+=strlen(argv[i])+1;*/
+        /*assert(buf->n>buf->i && "too many items for buffer");*/
+    /*}*/
+    /*buf->d[(buf->i++)]='\0';*/
+    /*assert(buf->n>buf->i && "too many items for buffer");*/
+    /*return 0;*/
+/*}*/
+
+u32 sqlite_init(const char* name) {
+    u32 err=sqlite3_open(name, &db);
+    if (err) {
+        fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return 1;
+    }
+    return 0;
+}
+
+void sqlite_close() { sqlite3_close(db); }
+
+void sqlite_exec(const char* query) {
+    char *zErrMsg = 0;
+    i32 res = sqlite3_exec(db, query, NULL, NULL, &zErrMsg);
+    if (res != SQLITE_OK){
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        sqlite3_free(zErrMsg);
+    }
+}
+
 
 i32 main(i32 argc, char* argv[]) {
     init();

@@ -1,13 +1,8 @@
 #bar ← •Import "bar.bqn"
-#a←↕10
-#b←3+a
-#bar.a + b + a
-
-z←111
-
-# ⟨a,b,c,...⟩ 𝕊 ⟨a,b,c,d,...⟩ → ⟨a,b⟩
-F←{
-  𝕊: 𝕩+z 
+a←111
+b←222
+F←{ 𝕊: 
+  𝕩+a 
 }
-
-F 1
+•SHow F a
+•SHow F b

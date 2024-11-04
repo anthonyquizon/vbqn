@@ -6,6 +6,7 @@ mkShell {
     replxx
     lldb
     libffi
+    sqlite
   ];
 }
 

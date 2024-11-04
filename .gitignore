@@ -4,3 +4,4 @@ _scratch*
 *.dSYM/
 replxx_history.txt
 lib.so
+db
