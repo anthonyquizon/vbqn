@@ -1,10 +1,15 @@
 #bar ← •Import "bar.bqn"
-a←111
-b←222
+#ffi←"./lib.so" •FFI "u32"‿"u32"
+b←2
+G←{ b+⟜𝕩↩ ⋄ b }
 
-F←{ 𝕊: 𝕩+a }
-G←{ 𝕊: 𝕩+b }
+G 1
+G 2
 
-F a
-G b
-F b
+#G a
+#G b
+#F b
+
+#FFI 1
+#FFI 2
+#FFI 3

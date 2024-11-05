@@ -21,3 +21,6 @@ debug: _scratch/debug.c
 
 lib.so: src/lib.c _extern/sqlite/sqlite3.o
 	$(CC) ./_extern/sqlite/sqlite3.o src/lib.c -g -shared $(cflags)  -o lib.so  
+
+test/lib.so: test/lib.c 
+	$(CC) test/lib.c -g -shared $(cflags)  -o test/lib.so  

@@ -1,4 +1,5 @@
 engine ← •Import "./e.bqn"
+⟨ctx⟩  ← •Import "./s.bqn"
 
 system⇐@
 runtime⇐⟨
@@ -16,12 +17,19 @@ Import ← {
     𝕩 import_cache.Set r
     r
 }
+
+FFI ← {
+  f←𝕨 •FFI 𝕩
+  { •SHow "record ffi" ⋄  𝔽 𝕩 }
+}
+
 # Lookup table
 systable← ∾<˘⋈˘⍉>⟨
     "type"‿•Type
      "out"‿•Out
     "show"‿•Show
   "import"‿Import
+     "ffi"‿FFI
 ⟩
 
 FindSys ← {

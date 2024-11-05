@@ -4,7 +4,11 @@ varm    ⇐ ⟨⟩ •HashMap ⟨⟩ # variables and arguments
 idm     ⇐ ⟨⟩ •HashMap ⟨⟩
 outm    ⇐ ⟨⟩ •HashMap ⟨⟩
 linem   ⇐ ⟨⟩ •HashMap ⟨⟩
+bodiesm ⇐ ⟨⟩ •HashMap ⟨⟩
 history ⇐ ⟨⟩
+
+# TODO function names
+# TODO variable names from ids
 
 MakeStack ← {
   s ← 𝕩                          # Stack (a list)
@@ -18,7 +22,7 @@ ctx ⇐ {
 
   Push ⇐ {
     f←𝕩∾˜(0⊸≢≠)◶""‿⊑ s.Peek @
-    s.Push ⟨•file.Parent "../"∾f, •file.Chars "../"∾f, f⟩
+    s.Push ⟨•file.Parent f, •file.Chars "../"∾f, f⟩
   }
 
   Peek ⇐ s.Peek
@@ -58,7 +62,7 @@ sql⇐{
   Exec  ⇐ { Sqlite_exec_c ⟨𝕩∾@+0⟩ }
   Close ⇐ { 𝕊: Sqlite_close_c ⟨⟩ }
   Populate ⇐ { 𝕊:
-    #"v"‿"out"‿"idm"{•Show 𝕨 ⋄ •Show >(𝕩.Keys @)‿(𝕩.Values @)}¨varm‿outm‿idm
+    "v"‿"out"‿"idm"{•Show 𝕨 ⋄ •Show >(𝕩.Keys @)‿(𝕩.Values @)}¨varm‿outm‿idm
 
     •SH "rm"‿"-r"‿"_data/db"
 
@@ -72,10 +76,11 @@ sql⇐{
     }¨idm.Values @
 
     # insert variables
-    (varm.Keys @){ 
-      call‿id‿name 𝕊 val:
-        sql.Exec "insert into vars(body, call, name, value, reified) values ({}, {}, '{}', '{}', true)" Fmt id‿call‿name‿(•Fmt val)
-    } ¨•Fmt¨varm.Values @
+    # TODO insert indices
+    #(varm.Keys @){ 
+      #call‿id‿name 𝕊 val:
+        #sql.Exec "insert into vars(body, call, name, value, reified) values ({}, {}, '{}', '{}', true)" Fmt id‿call‿name‿(•Fmt val)
+    #} ¨•Fmt¨varm.Values @
 
     # insert history
     { sql.Exec "insert into history(body) values ({})" Fmt ⟨𝕩⟩ } ¨history

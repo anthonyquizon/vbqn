@@ -1,9 +1,0 @@
-#! /usr/bin/env bash
-
-cd "$(dirname "$0")"
-
-../dbqn foo.bqn << EOF
-)r foo
-
-•Show "woo"
-EOF

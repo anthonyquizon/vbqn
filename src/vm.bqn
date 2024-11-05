@@ -14,9 +14,16 @@ MakeVar ← { program 𝕊 name:
   v⇐@  # Value
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
-  SetN ⇐ {
+  SetN ⇐ { 
     Get ↩ {𝕊:v}
-    (SetU ↩ {v↩𝕩}) 𝕩
+    { (name⊑program.names) state.bodies.Rec 𝕩 }⍟(name≢¯1) 𝕩
+    # Record variable set
+    # Mutation
+    SetU ↩ {  
+      # TODO record
+      v↩𝕩     
+    }
+    v↩𝕩
   }
   SetQ ⇐ 0∘SetN
   GetC ⇐ {
@@ -157,7 +164,6 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   23‿(       {s𝕊e: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
   22‿(       {s𝕊e: "Left argument required" ! nothing≢s.Peek@ }˙)
   # Variables
-  # TODO record 
   32‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).Get @ } }
   34‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).GetC@ } }
   33‿{v←VO𝕩⋄ {s𝕊e: s.Push  V e        } }
@@ -181,8 +187,6 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    #•Show stack.s
-    #•Show pos↓bc
     op ← (Next@) ⊑ ops
     op ↩ Op next
     stack Op env
@@ -200,6 +204,7 @@ RecTree←{
 
 # Evaluate a program, given the compiler output
 { VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  ## TODO store bodies with context and position
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
