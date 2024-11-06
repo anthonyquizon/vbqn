@@ -7,8 +7,11 @@ p ← ⟨⟩ •HashMap ⟨⟩ # inspection points
 
 Init_c ⟨⟩
 
-List←{ 𝕩 }
-R←{ 𝕩 }
+List←{ 
+  𝕩 
+}
+
+Help ← {𝕩 }
 
 Query←{ 
   •Show "query"‿𝕩
@@ -24,7 +27,11 @@ History←{ 𝕊:
 
 # Repl specific operations
 opts←⍉[
+  ")h"‿Help
+  ")help"‿Help
+
   ")l"‿List
+  ")list"‿List
   #")r"‿R
   # TODO explain
 ]

@@ -8,21 +8,17 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 
-state←•Import "s.bqn"
+⟨⟨Reg,Push,Pop⟩⇐bodies,ctx,SetFileLoc⟩←state←•Import "s.bqn"
 
-MakeVar ← { program 𝕊 name:
+MakeVar ← { program 𝕊 id:
   v⇐@  # Value
+  name⇐(id≢¯1)◶⟨⟩‿{(id⊑program.names)} @
+
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ { 
-    Get ↩ {𝕊:v}
-    { (name⊑program.names) state.bodies.Rec 𝕩 }⍟(name≢¯1) 𝕩
-    # Record variable set
-    # Mutation
-    SetU ↩ {  
-      # TODO record
-      v↩𝕩     
-    }
+    Get  ↩ {𝕊:v}
+    SetU ↩ {v↩𝕩}
     v↩𝕩
   }
   SetQ ⇐ 0∘SetN
@@ -31,7 +27,7 @@ MakeVar ← { program 𝕊 name:
     Get↩SetU↩SetN↩!∘"Internal error: Variable used after clear"
     r
   }
-  GetF ⇐ {program 𝕩.Field name}
+  GetF ⇐ {program 𝕩.Field id}
 }
 
 # Other kinds of references, and reference utilities
@@ -140,56 +136,60 @@ MakeStack ← {
 # called on the stack s and environment e at evaluation time.
 ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   # Constants and drop
-   0‿{i←𝕏@ ⋄ {s𝕊e: s.Push         i⊑e.program.consts } }
-   1‿{i←𝕏@ ⋄ {s𝕊e: s.Push e {𝕎𝕩}˜ i⊑e.program.blocks } }
-   6‿(       {s𝕊e: s.Pop 1 }˙)
+   0‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push         i⊑e.program.consts } }
+   1‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e {𝕎𝕩}˜ i⊑e.program.blocks } }
+   6‿(       {s𝕊e‿·: s.Pop 1 }˙)
   # Returns
-   7‿(       {s𝕊e: 0 s.Ret ⊑s.Pop 1 }˙)
-   8‿(       {s𝕊e: 1 s.Ret Namespace e }˙)
+   7‿(       {s𝕊e‿·: 0 s.Ret ⊑s.Pop 1 }˙)
+   8‿(       {s𝕊e‿·: 1 s.Ret Namespace e }˙)
   # Arrays
-  11‿{i←𝕏@ ⋄ {s𝕊e: s.Push           ⌽s.Pop i } }
-  12‿{i←𝕏@ ⋄ {s𝕊e: s.Push ref.Array ⌽s.Pop i } }
-  13‿{i←𝕏@ ⋄ {s𝕊e: s.Push > ⌽s.Pop i } }
-  14‿{i←𝕏@ ⋄ {s𝕊e: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
+  11‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push           ⌽s.Pop i } }
+  12‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push ref.Array ⌽s.Pop i } }
+  13‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push > ⌽s.Pop i } }
+  14‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
-  16‿(       {s𝕊e: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
-  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
-  20‿(       {s𝕊e: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
-  21‿(       {s𝕊e: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
-  26‿(       {s𝕊e: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
-  27‿(       {s𝕊e: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
-  # Application with Nothing
-  18‿(       {s𝕊e: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
-  19‿(       {s𝕊e: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
-  23‿(       {s𝕊e: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
-  22‿(       {s𝕊e: "Left argument required" ! nothing≢s.Peek@ }˙)
+  16‿(       {s𝕊e‿·: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
+  17‿(       {s𝕊e‿·: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
+  20‿(       {s𝕊e‿·: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
+  21‿(       {s𝕊e‿·: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
+  26‿(       {s𝕊e‿·: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
+  27‿(       {s𝕊e‿·: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
+  # Application w‿·ith Nothing
+  18‿(       {s𝕊e‿·: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
+  19‿(       {s𝕊e‿·: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
+  23‿(       {s𝕊e‿·: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
+  22‿(       {s𝕊e‿·: "Left argument required" ! nothing≢s.Peek@ }˙)
   # Variables
-  32‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).Get @ } }
-  34‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).GetC@ } }
-  33‿{v←VO𝕩⋄ {s𝕊e: s.Push  V e        } }
+  32‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push (V e).Get @ } }
+  34‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push (V e).GetC@ } }
+  33‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push  V e        } }
   # Headers
-  42‿(       {s𝕊e: {0:s.Skip@; 1:@; 𝕊:!"Predicate value must be 0 or 1"} ⊑s.Pop 1 }˙)
-  43‿(       {s𝕊e: s.Push ref.Matcher ⊑s.Pop 1 }˙)
-  44‿(       {s𝕊e: s.Push ref.not }˙)
+  42‿(       {s𝕊e‿·: {0:s.Skip@; 1:@; 𝕊:!"Predicate value must be 0 or 1"} ⊑s.Pop 1 }˙)
+  43‿(       {s𝕊e‿·: s.Push ref.Matcher ⊑s.Pop 1 }˙)
+  44‿(       {s𝕊e‿·: s.Push ref.not }˙)
   # Assignment
-  47‿(       {s𝕊e: s.Skip⍟⊢{r‿  v: r.SetQ   v           } s.Pop 2 }˙)  # r:
-  48‿(       {s𝕊e: s.Push { r‿  v: r.SetN⊸⊢ v           } s.Pop 2 }˙)  # r  ←v
-  49‿(       {s𝕊e: s.Push { r‿  v: r.SetU⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
-  50‿(       {s𝕊e: s.Push { r‿f‿x: r.SetU⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
-  51‿(       {s𝕊e: s.Push { r‿f  : r.SetU⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
+  47‿(       {s𝕊e‿·: s.Skip⍟⊢{r‿  v: r.SetQ   v                 } s.Pop 2 }˙)  # r:
+  48‿(       {s𝕊e‿l: s.Push { r‿  v: r.name Reg l ⋄ r.SetN⊸⊢ v  } s.Pop 2 }˙)  # r  ←v # TODO pass loc
+  49‿(       {s𝕊e‿l: s.Push { r‿  v: r.name Reg l ⋄ r.SetU⊸⊢ v  } s.Pop 2 }˙)  # r  ↩v # TODO mark function as impure
+  50‿(       {s𝕊e‿l: s.Push { r‿f‿x: r.name Reg l ⋄ r.SetU⊸⊢ (r.Get@)F x       } s.Pop 3 }˙)  # r F↩x # TODO mark function as impure
+  51‿(       {s𝕊e‿l: s.Push { r‿f  : r.name Reg l ⋄ r.SetU⊸⊢ F r.Get@          } s.Pop 2 }˙)  # r F↩  
   # Namespaces
-  64‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i GetField  ⊑s.Pop 1 } }
-  66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
+  64‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i GetField  ⊑s.Pop 1 } }
+  66‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
 # Evaluate a body
-RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
+RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
+    ⟨·,src,·⟩ ←ctx.Peek @
+    l←pos⊑¨loc
+    #•Show l
+    #•Show l⊏src
     op ← (Next@) ⊑ ops
     op ↩ Op next
-    stack Op env
+    stack Op env‿l
     stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
@@ -197,13 +197,15 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   stack.rslt
 }
 
-RecTree←{
-  {state.bodies.Rec 𝕩.v}¨𝕩.vars
-  {RecTree 𝕩.parent}⍟(𝕩 •ns.Has "parent") 𝕩
-}
+# TODO register all variables
+#RegTree←{
+  #•Show Reg ((0⊸≠≠¨)⊸/){ 𝕩.name }¨𝕩.vars
+  #{RegTree 𝕩.parent}⍟(𝕩 •ns.Has "parent") 𝕩
+#}
 
 # Evaluate a program, given the compiler output
 { VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  SetFileLoc loc
   ## TODO store bodies with context and position
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
@@ -211,11 +213,13 @@ RecTree←{
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
-      state.bodies.Push start‿args
-      ⟨"𝕩","𝕨"⟩ state.bodies.Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
+      Push start‿args
+      ⟨·,src,·⟩ ←ctx.Peek @
+      Reg⟜(start⊑¨loc)¨names⊏program.names
+      #⟨"𝕩","𝕨"⟩ Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
 
-      out←RunBC bc‿start‿env
-      state.bodies.Pop out
+      out←RunBC bc‿start‿env‿loc
+      Pop out
       out
     }
   }¨ bodyInfo

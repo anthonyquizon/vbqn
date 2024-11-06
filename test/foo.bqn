@@ -1,10 +1,13 @@
 #bar ← •Import "bar.bqn"
 #ffi←"./lib.so" •FFI "u32"‿"u32"
-b←2
-G←{ b+⟜𝕩↩ ⋄ b }
+abc←2
+y←1
+Fun←{ 𝕊 a‿b: abc+⟜a↩ ⋄ abc+b }
+Foooo←{ 𝕊 a: abc+a }
 
-G 1
-G 2
+Fun 1‿2
+#Fun 2‿3
+Foooo 2‿3
 
 #G a
 #G b

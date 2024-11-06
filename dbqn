@@ -7,4 +7,4 @@ repl   ← •Import "./src/repl.bqn"
 ⟨system, runtime⟩ engine.Run ⊑•args
 
 sql.Populate @
-repl.Run •Show ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments
+repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments

@@ -1,11 +1,17 @@
 ⟨⟨Fmt⟩⇐strings⟩←•Import "util.bqn"
 
 varm    ⇐ ⟨⟩ •HashMap ⟨⟩ # variables and arguments
+regm    ⇐ ⟨⟩ •HashMap ⟨⟩ # 
+valm    ⇐ ⟨⟩ •HashMap ⟨⟩ # 
 idm     ⇐ ⟨⟩ •HashMap ⟨⟩
 outm    ⇐ ⟨⟩ •HashMap ⟨⟩
 linem   ⇐ ⟨⟩ •HashMap ⟨⟩
 bodiesm ⇐ ⟨⟩ •HashMap ⟨⟩
+linesm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines 
+colsm   ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines 
 history ⇐ ⟨⟩
+
+lf←@+10
 
 # TODO function names
 # TODO variable names from ids
@@ -22,14 +28,23 @@ ctx ⇐ {
 
   Push ⇐ {
     f←𝕩∾˜(0⊸≢≠)◶""‿⊑ s.Peek @
-    s.Push ⟨•file.Parent f, •file.Chars "../"∾f, f⟩
+    src←•file.Chars "../"∾f
+    s.Push ⟨•file.Parent f, src, f⟩
   }
 
   Peek ⇐ s.Peek
   Pop  ⇐ s.Pop
 }
 
-Update ← { m‿k 𝕊 v: m.Has◶{𝕩 m.Set v ⋄ v}‿m.Get k }
+Update ← { m‿k 𝕊 f: m.Has◶{v←F @ ⋄𝕩 m.Set v ⋄ v}‿m.Get k }
+
+# Rename?
+SetFileLoc⇐{
+  𝕊 loc:
+    ⟨·,src,file⟩ ←ctx.Peek @
+    file colsm.Set ∾+`¨1¨¨⊔+`src=lf
+    file linesm.Set 1++`src=lf # convert locs to line numbers
+}
 
 # Hash: start‿filename‿c
 bodies ⇐ {
@@ -37,7 +52,7 @@ bodies ⇐ {
 
   Push⇐{
     start‿args←𝕩
-      ⟨·,·,file⟩ ←ctx.Peek @
+      ⟨·,src,file⟩ ←ctx.Peek @
       id←idm‿(start∾⟨file⟩) Update (idm.Count @)
       history ∾⟜(⟨id⟩)↩
       s.Push id
@@ -46,8 +61,20 @@ bodies ⇐ {
   Pop⇐{ (⊑s.Pop 1) outm.Set 𝕩 }
 
   Rec⇐{
-    id ←s.Peek @ ⋄ i←1-˜≠history
-    (i‿id‿𝕨) varm.Set 𝕩
+    l 𝕊 v: 
+      id ←s.Peek @ ⋄ i←1-˜≠history
+      (i‿id‿l) varm.Set v
+  }
+
+  # register variable location
+  Reg⇐{
+    name 𝕊 l:
+      •SHow name‿l
+      ⟨·,·,file⟩ ←ctx.Peek @ 
+      id ←s.Peek @
+      ln←(⊑l)⊑linesm.Get file # lines
+      cs←l⊏colsm.Get file     # columns
+      (id‿name) regm.Set cs∾ln
   }
 }
 
@@ -62,7 +89,7 @@ sql⇐{
   Exec  ⇐ { Sqlite_exec_c ⟨𝕩∾@+0⟩ }
   Close ⇐ { 𝕊: Sqlite_close_c ⟨⟩ }
   Populate ⇐ { 𝕊:
-    "v"‿"out"‿"idm"{•Show 𝕨 ⋄ •Show >(𝕩.Keys @)‿(𝕩.Values @)}¨varm‿outm‿idm
+    #"v"‿"out"‿"idm"{•Show 𝕨 ⋄ •Show >(𝕩.Keys @)‿(𝕩.Values @)}¨varm‿outm‿idm
 
     •SH "rm"‿"-r"‿"_data/db"
 
@@ -81,6 +108,11 @@ sql⇐{
       #call‿id‿name 𝕊 val:
         #sql.Exec "insert into vars(body, call, name, value, reified) values ({}, {}, '{}', '{}', true)" Fmt id‿call‿name‿(•Fmt val)
     #} ¨•Fmt¨varm.Values @
+
+    (regm.Keys @){ 
+      id‿name 𝕊 col_s‿col_e‿line:
+        sql.Exec "insert into regs(body, name, col_s, col_e, line) values ({}, '{}', {}, {}, {})" Fmt id‿name‿col_s‿col_e‿line
+    } ¨regm.Values @
 
     # insert history
     { sql.Exec "insert into history(body) values ({})" Fmt ⟨𝕩⟩ } ¨history
