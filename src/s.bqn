@@ -89,15 +89,12 @@ Ref←{ body‿name 𝕊 file‿i:
   (refm.Has)◶Insert‿refm.Get body‿name
 }
 
-Val←{ ref 𝕊 v:
-  •Show ref
-  sql.Exec "insert into vals(ref, i) values ({}, {})" Fmt ref‿(≠data)
-  data↩data∾⟨v⟩
-}
-
 Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
   ⟨file⟩←ctx.Peek @ ⋄ body←bodies.Peek @ 
   id ← body‿name Ref file‿i
-  id Val v
+
+  sql.Exec "insert into vals(ref, i) values ({}, {})" Fmt id‿(≠data)
+  data↩data∾⟨v⟩
 }
+
 

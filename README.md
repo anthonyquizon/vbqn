@@ -1,10 +1,9 @@
-
-# Notes
+# 𝔽⍷𝕣n
+## Notes
 
 **src**
 - e         compiler/vm runner
 - s         file state and recorder
-- r         repl
 
 loc: ⟨bytecode character start position, bytecode character end position⟩
 
