@@ -1,11 +1,14 @@
 #! /usr/bin/env bqn
 
 engine ← •Import "./src/e.bqn"
-⟨sql⟩  ← •Import "./src/s.bqn"
+⟨sql⟩  ←s← •Import "./src/s.bqn"
 repl   ← •Import "./src/repl.bqn"
 ⟨system, runtime⟩ ← •Import "./src/p.bqn"
 
 sql.Setup @
+
+# set audit
 ⟨system, runtime⟩ engine.Run ⊑•args
 
-repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments
+#•SHow s.datm.Values@
+#repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments

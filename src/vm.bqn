@@ -8,18 +8,17 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 
-⟨⟨Reg,Push,Pop⟩⇐bodies,ctx,SetFileLoc⟩←state←•Import "s.bqn"
+⟨Rec,⟨Push,Pop⟩⇐bodies,ctx,SetFileLoc⟩←state←•Import "s.bqn"
 
 MakeVar ← { program 𝕊 id:
-  v⇐@  # Value
-  name⇐(id≢¯1)◶⟨⟩‿{(id⊑program.names)} @
+  v←@  # Value
 
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
-  SetN ⇐ { 
+  SetN ⇐ {
     Get  ↩ {𝕊:v}
-    SetU ↩ {v↩𝕩}
-    v↩𝕩
+    SetU ↩ { 𝕨 {(id⊑program.names)‿𝕨 Rec 𝕩}⍟(¯1≢id) 𝕩 ⋄ v↩𝕩 }
+    𝕨 SetU 𝕩
   }
   SetQ ⇐ 0∘SetN
   GetC ⇐ {
@@ -42,21 +41,22 @@ ref ← {
     # Common code for all setter functions
     # 𝕨S𝕩 sets reference 𝕨 to 𝕩, and e indicates error handling
     al ← ∨´ {⟨al⟩:al;0}¨ arr
+
     _set_ ← {S _𝕣_ e:
       Err ← {(e∾": "∾𝕩)!e≡@ ⋄ ⟨1⟩} # e≡@ indicates SetQ, which can't error
       c ← (e≡@) ⊑ {𝔽}‿{𝔽⎊1}        # GetF or Get in F can error
       # Get field for reference 𝕨 from namespace, if possible
       F ← {⟨G⇐GetF⟩𝕊𝕩:(G𝕩).Get@ ; !Err"Cannot extract non-name from namespace"}
       {
-        0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
-                   arr ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
-        6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
+        𝕨𝕊𝕩: 0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
+                   (⟨𝕨⟩⊸∾¨arr) ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
+        𝕨𝕊𝕩: 6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
         Err "Multiple targets but atomic value"
       }
     }
-    SetN ⇐    {𝕨.SetN𝕩}_set_"←"
-    SetU ⇐    {𝕨.SetU𝕩}_set_"↩"
-    SetQ ⇐ ∨´ {𝕨.SetQ𝕩}_set_@
+    SetN ⇐   {l‿r𝕊𝕩:l r.SetN𝕩}_set_"←"
+    SetU ⇐   {l‿r𝕊𝕩:l r.SetU𝕩}_set_"↩"
+    SetQ ⇐ ∨´{l‿r𝕊𝕩:l r.SetQ𝕩}_set_@ 
     # Create a merged reference array based on this one
     Merge ⇐ {𝕊:
       Split ← {
@@ -168,11 +168,11 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   43‿(       {s𝕊e‿·: s.Push ref.Matcher ⊑s.Pop 1 }˙)
   44‿(       {s𝕊e‿·: s.Push ref.not }˙)
   # Assignment
-  47‿(       {s𝕊e‿·: s.Skip⍟⊢{r‿  v: r.SetQ   v                 } s.Pop 2 }˙)  # r:
-  48‿(       {s𝕊e‿l: s.Push { r‿  v: r.name Reg l ⋄ r.SetN⊸⊢ v  } s.Pop 2 }˙)  # r  ←v # TODO pass loc
-  49‿(       {s𝕊e‿l: s.Push { r‿  v: r.name Reg l ⋄ r.SetU⊸⊢ v  } s.Pop 2 }˙)  # r  ↩v # TODO mark function as impure
-  50‿(       {s𝕊e‿l: s.Push { r‿f‿x: r.name Reg l ⋄ r.SetU⊸⊢ (r.Get@)F x       } s.Pop 3 }˙)  # r F↩x # TODO mark function as impure
-  51‿(       {s𝕊e‿l: s.Push { r‿f  : r.name Reg l ⋄ r.SetU⊸⊢ F r.Get@          } s.Pop 2 }˙)  # r F↩  
+  47‿(       {s𝕊e‿l: s.Skip⍟⊢{r‿  v: l r.SetQ   v           } s.Pop 2 }˙)  # r:
+  48‿(       {s𝕊e‿l: s.Push  {r‿  v: (l⊸r.SetN)⊸⊢ v       } s.Pop 2 }˙)  # r  ←v
+  49‿(       {s𝕊e‿l: s.Push  {r‿  v: (l⊸r.SetU)⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
+  50‿(       {s𝕊e‿l: s.Push  {r‿f‿x: (l⊸r.SetU)⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
+  51‿(       {s𝕊e‿l: s.Push  {r‿f  : (l⊸r.SetU)⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
   # Namespaces
   64‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i GetField  ⊑s.Pop 1 } }
   66‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
@@ -196,27 +196,18 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   stack.rslt
 }
 
-# TODO register all variables
-#RegTree←{
-  #•Show Reg ((0⊸≠≠¨)⊸/){ 𝕩.name }¨𝕩.vars
-  #{RegTree 𝕩.parent}⍟(𝕩 •ns.Has "parent") 𝕩
-#}
-
 # Evaluate a program, given the compiler output
 { VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   SetFileLoc loc
-  ## TODO store bodies with context and position
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+      (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
       Push start‿args
       ⟨src⟩ ←ctx.Peek @
-      Reg⟜(start⊑¨loc)¨names⊏program.names
-      #⟨"𝕩","𝕨"⟩ Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
-
+      {(∾⟜⟨start‿start⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
       out←RunBC bc‿start‿env‿loc
       Pop out
       out

@@ -138,13 +138,13 @@ u32 sqlite_init(const char* name) {
 
 void sqlite_close() { sqlite3_close(db); }
 
-#define BUFFER_LEN 5000
-//FIXME allow unicode inserts
+#define SQLITE_BUFFER_LEN 5000
+
 void sqlite_exec(i32* query) {
     i32 *code_point_cursor = query;  // Copy of the base pointer so we can move this one around.
-    char utf8_bytes[BUFFER_LEN];
+    char utf8_bytes[SQLITE_BUFFER_LEN];
     char* start_byte=utf8_bytes;
-    char *end_byte = utf8_bytes + BUFFER_LEN;
+    char *end_byte = utf8_bytes + SQLITE_BUFFER_LEN;
 
     do {
         encode_code_point(&start_byte, end_byte, *code_point_cursor++);
@@ -159,6 +159,10 @@ void sqlite_exec(i32* query) {
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
     }
+}
+
+u64 sqlite_last_rowid() {
+    return sqlite3_last_insert_rowid(db);
 }
 
 
