@@ -21,7 +21,7 @@ Query←{
 History←{ 𝕊:
   k←s.idm.Keys @
   v←s.idm.Values @
-  •Show s.history
+  #•Show s.history
   #•Show { i‿f: 20↑i↓ •FChars "../"∾f }¨k⊏˜v⊏s.history
 }
 

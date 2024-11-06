@@ -183,12 +183,11 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    ⟨·,src,·⟩ ←ctx.Peek @
+    ⟨src⟩ ←ctx.Peek @
     l←pos⊑¨loc
-    #•Show l
-    #•Show l⊏src
     op ← (Next@) ⊑ ops
     op ↩ Op next
+
     stack Op env‿l
     stack.cont  # Changes to 0 on return or abort
   }
@@ -214,7 +213,7 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
       Push start‿args
-      ⟨·,src,·⟩ ←ctx.Peek @
+      ⟨src⟩ ←ctx.Peek @
       Reg⟜(start⊑¨loc)¨names⊏program.names
       #⟨"𝕩","𝕨"⟩ Rec¨rargs←(1⌊≠)◶(nothing¨↕2)‿(1‿2⊸⊏) args
 

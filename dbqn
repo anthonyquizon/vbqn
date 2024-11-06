@@ -4,7 +4,8 @@ engine ← •Import "./src/e.bqn"
 ⟨sql⟩  ← •Import "./src/s.bqn"
 repl   ← •Import "./src/repl.bqn"
 ⟨system, runtime⟩ ← •Import "./src/p.bqn"
+
+sql.Setup @
 ⟨system, runtime⟩ engine.Run ⊑•args
 
-sql.Populate @
 repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments

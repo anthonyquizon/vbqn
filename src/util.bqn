@@ -33,3 +33,7 @@ ns⇐{
   }
 }
 
+### Hashmaps
+hashmap⇐{
+  Update ⇐ { m‿k 𝕊 f: m.Has◶{v←F @ ⋄𝕩 m.Set v ⋄ v}‿m.Get k }
+}
