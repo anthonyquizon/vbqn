@@ -6,9 +6,6 @@ repl   ← •Import "./src/repl.bqn"
 ⟨system, runtime⟩ ← •Import "./src/p.bqn"
 
 sql.Setup @
-
-# set audit
 ⟨system, runtime⟩ engine.Run ⊑•args
 
-#•SHow s.datm.Values@
-#repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments
+repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments

@@ -1,1 +1,1 @@
-•Query "foo:fun:a"
+? foo:fun:a

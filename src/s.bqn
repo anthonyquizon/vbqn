@@ -7,12 +7,9 @@ audit ⇐ ⟨⟩
 idm   ⇐ ⟨⟩ •HashMap ⟨⟩
 linm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines 
 colm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines
-datm  ⇐ ⟨⟩ •HashMap ⟨⟩ # data map
+refm  ⇐ ⟨⟩ •HashMap ⟨⟩
 
-#do_reg←1 # if registration phase has completed
-
-#Start ⇐ { 𝕊: 1 }
-#End   ⇐ { 𝕊: do_reg↩0 }
+data←⟨⟩
 
 MakeStack ← {
   s ← 𝕩                          # Stack (a list)
@@ -79,18 +76,28 @@ bodies ⇐ {
   Peek⇐s.Peek
 }
 
-Reg←{ body‿name‿file‿i:
+Ref←{ body‿name 𝕊 file‿i:
   l←i⊑linm.Get file ⋄ c←i⊑colm.Get file  
-  sql.Exec "insert or replace into vars(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿l‿c
-  sql.LastRowId @
+
+  Insert←{ 𝕊:
+    sql.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿l‿c
+    id←sql.LastRowId @
+    body‿name refm.Set id
+    id
+  }
+
+  (refm.Has)◶Insert‿refm.Get body‿name
 }
 
-
-## TODO rec arr shape/min/max/function query value
+Val←{ ref 𝕊 v:
+  •Show ref
+  sql.Exec "insert into vals(ref, i) values ({}, {})" Fmt ref‿(≠data)
+  data↩data∾⟨v⟩
+}
 
 Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
   ⟨file⟩←ctx.Peek @ ⋄ body←bodies.Peek @ 
-  id← Reg body‿name‿file‿i
-  id datm.Set v
+  id ← body‿name Ref file‿i
+  id Val v
 }
 

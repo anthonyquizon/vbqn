@@ -1,5 +1,5 @@
 ⟨⟨Trim⟩⇐strings, ns⟩ ←•Import "util.bqn"
-s ←•Import "s.bqn"
+⟨sql⟩←s ←•Import "s.bqn"
 init_c  ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "a"‿"input"
 
@@ -14,6 +14,7 @@ List←{
 Help ← {𝕩 }
 
 Query←{ 
+  #sql.Exec 
   •Show "query"‿𝕩
 }
 
@@ -27,11 +28,13 @@ History←{ 𝕊:
 
 # Repl specific operations
 opts←⍉[
-  ")h"‿Help
-  ")help"‿Help
+  "?"‿Query
 
-  ")l"‿List
-  ")list"‿List
+  "?h"‿Help
+  "?help"‿Help
+
+  "?l"‿List
+  "?list"‿List
   #")r"‿R
   # TODO explain
 ]
