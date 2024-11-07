@@ -1,5 +1,4 @@
 # 𝔽⍷𝕣n
-## Notes
 
 **src**
 - e         compiler/vm runner

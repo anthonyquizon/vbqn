@@ -1,13 +1,14 @@
-⟨⟨Fmt⟩⇐strings, ⟨Update⟩⇐hashmap⟩←•Import "util.bqn"
+⟨⟨Fmt⟩⇐strings⟩←•Import "util.bqn"
 lf←@+10
 
 # variables to record
 audit ⇐ ⟨⟩
 
-idm   ⇐ ⟨⟩ •HashMap ⟨⟩
+bodym ⇐ ⟨⟩ •HashMap ⟨⟩
 linm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines 
 colm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines
 refm  ⇐ ⟨⟩ •HashMap ⟨⟩
+valm  ⇐ ⟨⟩ •HashMap ⟨⟩
 
 data←⟨⟩
 
@@ -59,17 +60,20 @@ SetFileLoc⇐{
 
 bodies ⇐ {
   s ⇐ MakeStack ⟨⟩
-  c ⇐ 0
 
-  Push⇐{
-    start‿·←𝕩
-      ⟨src,file⟩ ←ctx.Peek @
-      id←idm‿(start∾⟨file⟩) Update (idm.Count @)
-      c +⟜1↩
+  Push⇐{ 𝕊 start‿·:
+    ⟨src,file⟩ ←ctx.Peek @
+    k←start∾⟨file⟩
 
-      sql.Exec "insert or replace into bodies(id, start, file) values ({}, {}, '{}')" Fmt id‿start‿file
-      sql.Exec "insert into history(body) values ({})" Fmt id
-      s.Push id
+    Insert←{ 𝕊:
+      id ←(bodym.Count @)
+      k bodym.Set id
+      sql.Exec "insert into bodies(id, start, file) values ({}, {}, '{}')" Fmt id‿start‿file
+    }
+
+    id←(bodym.Has)◶Insert‿bodym.Get k
+    sql.Exec "insert into history(body) values ({})" Fmt id
+    s.Push id
   }
 
   Pop⇐{ 𝕊: (⊑s.Pop 1) }
@@ -89,12 +93,18 @@ Ref←{ body‿name 𝕊 file‿i:
   (refm.Has)◶Insert‿refm.Get body‿name
 }
 
+Hash←{
+  𝕩: 6=•Type 𝕩 ? •Hash 0 # TODO implement
+; 𝕩: •Hash 𝕩
+}
+
 Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
   ⟨file⟩←ctx.Peek @ ⋄ body←bodies.Peek @ 
   id ← body‿name Ref file‿i
 
-  sql.Exec "insert into vals(ref, i) values ({}, {})" Fmt id‿(≠data)
-  data↩data∾⟨v⟩
-}
+  Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
+  n← (valm.Has)◶Cache‿valm.Get Hash v
 
+  sql.Exec "insert into vals(ref, i, type) values ({}, {}, {})" Fmt id‿n‿(•Type v)
+}
 

@@ -14,8 +14,9 @@ List←{
 Help ← {𝕩 }
 
 Query←{ 
+  𝕊: 𝕩
   #sql.Exec 
-  •Show "query"‿𝕩
+  #•Show "query"‿𝕩
 }
 
 # HACK
