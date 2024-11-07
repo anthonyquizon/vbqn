@@ -202,15 +202,13 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
+      Push start⊑¨loc
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
-      Push start‿args
-      ⟨src⟩ ←ctx.Peek @
-      {(∾⟜⟨start‿start⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
+      {(∾⟜⟨start⊑¨loc⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
       out←RunBC bc‿start‿env‿loc
-      Pop out
-      out
+      Pop @
     }
   }¨ bodyInfo
 

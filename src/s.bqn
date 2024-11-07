@@ -61,14 +61,16 @@ SetFileLoc⇐{
 bodies ⇐ {
   s ⇐ MakeStack ⟨⟩
 
-  Push⇐{ 𝕊 start‿·:
+  Push⇐{ 𝕊 i‿·:
     ⟨src,file⟩ ←ctx.Peek @
-    k←start∾⟨file⟩
+    k←i∾⟨file⟩
 
     Insert←{ 𝕊:
+      line←i⊑linm.Get file ⋄ col←i⊑colm.Get file  
       id ←(bodym.Count @)
       k bodym.Set id
-      sql.Exec "insert into bodies(id, start, file) values ({}, {}, '{}')" Fmt id‿start‿file
+      sql.Exec "insert into bodies(id, file, line, col) values ({}, '{}', {}, {})" Fmt id‿file‿line‿col
+      id
     }
 
     id←(bodym.Has)◶Insert‿bodym.Get k
@@ -81,10 +83,9 @@ bodies ⇐ {
 }
 
 Ref←{ body‿name 𝕊 file‿i:
-  l←i⊑linm.Get file ⋄ c←i⊑colm.Get file  
-
   Insert←{ 𝕊:
-    sql.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿l‿c
+    line←i⊑linm.Get file ⋄ col←i⊑colm.Get file  
+    sql.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿line‿col
     id←sql.LastRowId @
     body‿name refm.Set id
     id
