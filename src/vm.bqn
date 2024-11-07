@@ -10,6 +10,8 @@
 
 ⟨Rec,⟨Push,Pop⟩⇐bodies,ctx,SetFileLoc⟩←state←•Import "s.bqn"
 
+abort←0
+
 MakeVar ← { program 𝕊 id:
   v←@  # Value
 
@@ -178,6 +180,12 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
+Error← {𝕊: 
+  •Out "Error:"∾•CurrentError@
+  •Out "TODO show stack trace and stop recording"
+  abort↩1
+}
+
 # Evaluate a body
 RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
@@ -187,9 +195,9 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
     l←pos⊑¨loc
     op ← (Next@) ⊑ ops
     op ↩ Op next
-    
-    stack Op env‿l
-    stack.cont  # Changes to 0 on return or abort
+
+    stack Op⎊Error env‿l
+    (¬abort)∧stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
   Step _while_ ⊢ 1
