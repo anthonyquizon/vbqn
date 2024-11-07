@@ -187,7 +187,7 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
     l←pos⊑¨loc
     op ← (Next@) ⊑ ops
     op ↩ Op next
-
+    
     stack Op env‿l
     stack.cont  # Changes to 0 on return or abort
   }
@@ -202,7 +202,7 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
-      Push start⊑¨loc
+      Push start⊑¨loc # TODO push bytecode
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
