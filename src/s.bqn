@@ -43,7 +43,7 @@ ctx ⇐ {
 
   Push ⇐ {
     f←𝕩∾˜(0⊸≢≠)◶""‿⊑ s.Peek @
-    s.Push {cwd⇐•file.Parent f, src⇐•file.Chars "../"∾f, file⇐f}
+    s.Push {cwd⇐•file.Parent f, src⇐•file.Chars f, file⇐f}
   }
 
   Peek ⇐ s.Peek

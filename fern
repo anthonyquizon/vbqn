@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+dir=$PWD
+cd "$(dirname "$( [ -L "$0" ] && readlink -f "$0" || echo "$0" )")" # set directory (symlink or nonsymlink)
+bqn ./src/fern.bqn $dir/$@

@@ -28,6 +28,10 @@ systable← ∾<˘⋈˘⍉>⟨
     "type"‿•Type
      "out"‿•Out
     "show"‿•Show
+    "ns"  ‿•ns
+    "fmt" ‿•Fmt
+    "math"‿•math
+    "file"‿•file
   "import"‿Import
      "ffi"‿FFI
 ⟩
