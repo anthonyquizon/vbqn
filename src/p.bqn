@@ -1,5 +1,7 @@
-engine ← •Import "./e.bqn"
-⟨ctx⟩  ← •Import "./s.bqn"
+gl      ←    •Import "./glyphs.bqn"
+compile ← gl •Import "./c.bqn"
+vm      ←    •Import "./vm.bqn"
+⟨ctx⟩   ←    •Import "./s.bqn"
 
 system⇐@
 runtime⇐⟨
@@ -10,11 +12,14 @@ runtime⇐⟨
 
 import_cache←⟨⟩ •HashMap ⟨⟩ #cached imported files
 
-Import ← {
+Import ⇐ {
   import_cache.Has 𝕩 ? import_cache.Get 𝕩;
   𝕩 : 
-    r←⟨system, runtime⟩ engine.Run 𝕩
+    ⟨src⟩←ctx.Push 𝕩
+    c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
+    r ← VM c
     𝕩 import_cache.Set r
+    ctx.Pop 1 
     r
 }
 
