@@ -42,7 +42,7 @@ ctx ⇐ {
   s ⇐ MakeStack ⟨⟩
 
   Push ⇐ {
-    f←𝕩∾˜(0⊸≢≠)◶""‿⊑ s.Peek @
+    f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") s.Peek @
     s.Push {cwd⇐•file.Parent f, src⇐•file.Chars f, file⇐f}
   }
 
@@ -74,7 +74,7 @@ bodies ⇐ {
     }
 
     id←(bodym.Has)◶Insert‿bodym.Get k
-    sql.Exec "insert into history(body) values ({})" Fmt id
+    sql.Exec "insert into history(body, depth) values ({}, {})" Fmt id‿(≠s)
     s.Push id
   }
 

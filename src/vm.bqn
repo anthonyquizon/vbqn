@@ -193,10 +193,13 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Step ← {𝕊:
     ⟨src⟩ ←ctx.Peek @
     l←pos⊑¨loc
+    #•Show "stack"‿stack.s
+    #•Show "bc"‿(pos↓bc)
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
-    stack Op⎊Error env‿l
+    #stack Op⎊Error env‿l
+    stack Op env‿l
     (¬abort)∧stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
@@ -204,9 +207,21 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   stack.rslt
 }
 
+# Wrap namespace to vm compatable namespace 
+AdaptConst ← { 
+  𝕊 ns: 6≡•Type ns ?
+    Field ⇐ {p𝕊i:
+      Get ⇐ { 𝕊: ns •ns.Get i⊑p.names }
+    }
+; 𝕊 𝕩: 𝕩
+}
+
+
 # Evaluate a program, given the compiler output
 { VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   SetFileLoc loc
+  consts↩AdaptConst¨consts
+
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:

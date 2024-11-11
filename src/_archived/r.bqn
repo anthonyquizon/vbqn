@@ -30,7 +30,6 @@ PrintLines ← { src 𝕊 n:
 
 cb←@ # TODO delete
 # TODO line /character positions
-Catch←{𝕊: •Out "Error: " ∾ •Fmt •CurrentError @ ⋄ ⟨⟩}
 
 # f: file
 # TODO repl history

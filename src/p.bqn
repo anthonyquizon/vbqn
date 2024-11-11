@@ -30,15 +30,16 @@ FFI ← {
 
 # Lookup table
 systable← ∾<˘⋈˘⍉>⟨
-    "type"‿•Type
+     "ffi"‿FFI
      "out"‿•Out
-    "show"‿•Show
-    "ns"  ‿•ns
+    "exit"‿•Exit
+    "file"‿•file
     "fmt" ‿•Fmt
     "math"‿•math
-    "file"‿•file
+    "ns"  ‿•ns
+    "show"‿•Show
+    "type"‿•Type
   "import"‿Import
-     "ffi"‿FFI
 ⟩
 
 FindSys ← {
