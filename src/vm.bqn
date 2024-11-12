@@ -8,6 +8,7 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 
+⟨debug⟩←•Import "log.bqn"
 ⟨Rec,⟨Push,Pop⟩⇐bodies,ctx,SetFileLoc⟩←state←•Import "s.bqn"
 
 abort←0
@@ -193,8 +194,10 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Step ← {𝕊:
     ⟨src⟩ ←ctx.Peek @
     l←pos⊑¨loc
-    #•Show "stack"‿stack.s
-    #•Show "bc"‿(pos↓bc)
+
+    "stack" Debug stack.s
+    "bc"    Debug (pos↓bc)
+    
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
@@ -232,6 +235,7 @@ AdaptConst ← {
       {(∾⟜⟨start⊑¨loc⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
       out←RunBC bc‿start‿env‿loc
       Pop @
+      out
     }
   }¨ bodyInfo
 

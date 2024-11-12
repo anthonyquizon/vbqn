@@ -4,4 +4,7 @@
 
 #•ns.Keys¨⟨⟩
 #•SHow •ns.Keys {a⇐1}
-•SHow {a⇐1}
+#•Show {a⇐1⋄b⇐2}.b
+•Show {a⇐1}
+
+
