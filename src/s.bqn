@@ -41,9 +41,9 @@ sql⇐{
 ctx ⇐ {
   s ⇐ MakeStack ⟨⟩
 
-  Push ⇐ {
+  Push ⇐ { args 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") s.Peek @
-    s.Push {cwd⇐•file.Parent f, src⇐•file.Chars f, file⇐f}
+    s.Push {args⇐args ⋄ cwd⇐•file.Parent f, src⇐•file.Chars f, file⇐f}
   }
 
   Peek ⇐ s.Peek

@@ -13,14 +13,20 @@ runtime⇐⟨
 import_cache←⟨⟩ •HashMap ⟨⟩ #cached imported files
 
 Import ⇐ {
-  import_cache.Has 𝕩 ? import_cache.Get 𝕩;
-  𝕩 : 
-    ⟨src⟩←ctx.Push 𝕩
+    𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
+; · 𝕊 𝕩 : import_cache.Has 𝕩 ? import_cache.Get 𝕩
+; 𝕨 𝕊 𝕩 : 
+    ⟨src⟩←𝕨 ctx.Push 𝕩
     c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
     r ← VM c
     𝕩 import_cache.Set r
     ctx.Pop 1 
     r
+}
+
+Args ← { 𝕊:
+  ⟨args⟩←ctx.Peek @
+  args
 }
 
 FFI ← {
@@ -30,6 +36,10 @@ FFI ← {
 
 # Lookup table
 systable← ∾<˘⋈˘⍉>⟨
+     "args"‿Args
+     "while"‿•_while_
+     "hash"‿•Hash
+     "parsefloat"‿•ParseFloat
      "ffi"‿FFI
      "out"‿•Out
     "exit"‿•Exit

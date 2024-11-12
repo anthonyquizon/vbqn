@@ -1,5 +1,6 @@
-# breaks for some reason
+# namespaced system functions should work
+#•Show •math.Sin 1
+#•Show •math.Cos 2
+
 #•ns.Keys¨⟨⟩
-#•ns.Keys {a⇐1}
-•Show •math.Sin 1
-•Show •math.Cos 2
+•SHow •ns.Keys {a⇐1}

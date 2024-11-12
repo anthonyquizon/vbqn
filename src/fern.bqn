@@ -1,8 +1,19 @@
 ⟨Import⟩ ← •Import "p.bqn"
+conf ← •Import "conf.bqn"
 ⟨sql⟩  ←s← •Import "s.bqn"
 repl   ← •Import "repl.bqn"
 
-sql.Setup @
-Import ⊑•args
+flags←⟨
+  conf.SetDebug‿"-g"
+⟩
 
-repl.Run ∾•FLines¨•args/˜»∨´¨"-i"⊸⍷¨•args # -i arguments
+Path←{•wdpath∾"/"∾𝕩}
+# TODO consume flag args
+#{ 𝕊 f‿i: F¨i⊸(⊢/˜∨´∘⍷¨) •args}¨flags
+
+sql.Setup @
+Import ⊑Path¨•args
+
+#repl.Run ∾•FLines¨"-i"(⊢/˜⊣⊸»∘∨´∘⍷¨)•args
+repl.Run ⟨⟩
+
