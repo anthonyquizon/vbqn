@@ -9,7 +9,7 @@
 # - GetF: Get corresponding field from namespace 𝕩
 
 ⟨debug⟩←•Import "log.bqn"
-⟨Rec,⟨Push,Pop⟩⇐bodies,ctx,SetFileLoc⟩←state←•Import "s.bqn"
+⟨Rec,⟨Push,Pop⟩⇐bodies,ctx⟩←state←•Import "s.bqn"
 
 abort←0
 
@@ -192,7 +192,6 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    ⟨src⟩ ←ctx.Peek @
     l←pos⊑¨loc
 
     "stack" Debug stack.s
@@ -221,14 +220,13 @@ AdaptConst ← {
 
 
 # Evaluate a program, given the compiler output
-{ VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  SetFileLoc loc
+{ file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
-
   bodies ← {start‿vars‿names‿export:
+
     # Called when the body is evaluated
     {parent 𝕊 args:
-      Push start⊑¨loc # TODO push bytecode
+      file Push start⊑¨loc # TODO push bytecode
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 

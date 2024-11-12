@@ -16,9 +16,9 @@ Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
 ; · 𝕊 𝕩 : import_cache.Has 𝕩 ? import_cache.Get 𝕩
 ; 𝕨 𝕊 𝕩 : 
-    ⟨src⟩←𝕨 ctx.Push 𝕩
+    ⟨src, file⟩←𝕨 ctx.Push 𝕩
     c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
-    r ← VM c
+    r ← file VM c
     𝕩 import_cache.Set r
     ctx.Pop 1 
     r

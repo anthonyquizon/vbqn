@@ -5,15 +5,14 @@ lf←@+10
 audit ⇐ ⟨⟩
 
 bodym ⇐ ⟨⟩ •HashMap ⟨⟩
-linm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines 
-colm  ⇐ ⟨⟩ •HashMap ⟨⟩ # file -> bytcode to lines
 refm  ⇐ ⟨⟩ •HashMap ⟨⟩
 valm  ⇐ ⟨⟩ •HashMap ⟨⟩
+filem ⇐ ⟨⟩ •HashMap ⟨⟩
 
 data←⟨⟩
 
 MakeStack ← {
-  s ← 𝕩                          # Stack (a list)
+  s ⇐ 𝕩                          # Stack (a list)
   Push ⇐ {s∾↩<𝕩 ⋄ 𝕩}                 # Push a value
   Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                # Return but don't pop top value
@@ -38,35 +37,52 @@ sql⇐{
   }
 }
 
+
 ctx ⇐ {
   s ⇐ MakeStack ⟨⟩
 
   Push ⇐ { args 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") s.Peek @
-    s.Push {args⇐args ⋄ cwd⇐•file.Parent f, src⇐•file.Chars f, file⇐f}
+
+    Cache←{
+      file  ⇐ f
+      args  ⇐ args 
+      src   ⇐ •file.Chars 𝕩 
+      cols  ⇐ ∾+`¨1¨¨⊔+`src=lf
+      lines ⇐ 1++`src=lf 
+    }
+    (filem.Set⟜Cache)⍟(¬∘filem.Has) f
+    s.Push { cwd⇐•file.Parent f }
+    filem.Get f
   }
 
   Peek ⇐ s.Peek
   Pop  ⇐ s.Pop
 }
 
-# Rename?
-SetFileLoc⇐{
-  𝕊 loc:
-    ⟨src,file⟩←ctx.Peek @
-    file colm.Set ∾+`¨1¨¨⊔+`src=lf
-    file linm.Set 1++`src=lf        # convert locs to line numbers
-}
+#trace ⇐ {
+  #s ⇐ MakeStack ⟨⟩
+  #f⇐@
+
+  #Set ⇐ {
+    #𝕊 loc:
+      #⟨col⟩←ctx.Peek @
+      #f↩loc
+  #}
+
+  #Push ⇐ { 𝕊: s.Push f }
+  #Pop  ⇐ s.Pop
+#}
 
 bodies ⇐ {
   s ⇐ MakeStack ⟨⟩
 
-  Push⇐{ 𝕊 i‿·:
-    ⟨src,file⟩ ←ctx.Peek @
+  Push⇐{ file 𝕊 i‿·:
+    ⟨lines, cols⟩←filem.Get file
     k←i∾⟨file⟩
 
     Insert←{ 𝕊:
-      line←i⊑linm.Get file ⋄ col←i⊑colm.Get file  
+      line←i⊑lines ⋄ col←i⊑cols
       id ←(bodym.Count @)
       k bodym.Set id
       sql.Exec "insert into bodies(id, file, line, col) values ({}, '{}', {}, {})" Fmt id‿file‿line‿col
@@ -74,8 +90,8 @@ bodies ⇐ {
     }
 
     id←(bodym.Has)◶Insert‿bodym.Get k
-    sql.Exec "insert into history(body, depth) values ({}, {})" Fmt id‿(≠s)
-    s.Push id
+    sql.Exec "insert into history(body, depth) values ({}, {})" Fmt id‿(≠s.s)
+    s.Push {id⇐id ⋄ file⇐file}
   }
 
   Pop⇐{ 𝕊: (⊑s.Pop 1) }
@@ -84,7 +100,8 @@ bodies ⇐ {
 
 Ref←{ body‿name 𝕊 file‿i:
   Insert←{ 𝕊:
-    line←i⊑linm.Get file ⋄ col←i⊑colm.Get file  
+    ⟨cols,lines⟩ ← filem.Get file
+    line←i⊑lines ⋄ col←i⊑cols
     sql.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿line‿col
     id←sql.LastRowId @
     body‿name refm.Set id
@@ -100,12 +117,12 @@ Hash←{
 }
 
 Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
-  ⟨file⟩←ctx.Peek @ ⋄ body←bodies.Peek @ 
-  id ← body‿name Ref file‿i
+  ⟨id,file⟩←bodies.Peek @ 
+  r← id‿name Ref file‿i
 
   Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
   n← (valm.Has)◶Cache‿valm.Get Hash v
 
-  sql.Exec "insert into vals(ref, i, type) values ({}, {}, {})" Fmt id‿n‿(•Type v)
+  sql.Exec "insert into vals(ref, i, type) values ({}, {}, {})" Fmt r‿n‿(•Type v)
 }
 
