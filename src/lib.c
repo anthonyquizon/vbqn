@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <termios.h>
 #include <unistd.h>
 #include <wchar.h>
@@ -15,6 +16,38 @@ bool inBackslash=false;
 
 
 #define IS_CONT(x) (((x) & 0xc0) == 0x80)
+
+int utf8str_codepoint_len( char const* s, int utf8len ) {
+	int codepointLen = 0;
+	unsigned char m4 = 128 + 64 + 32 + 16;
+	unsigned char m3 = 128 + 64 + 32;
+	unsigned char m2 = 128 + 64;
+	for ( int i = 0; i < utf8len; ++ i, ++ codepointLen ) {
+		char c = s[i];
+		if ( ( c & m4 ) == m4 ) {
+			i += 3;
+		} else if ( ( c & m3 ) == m3 ) {
+			i += 2;
+		} else if ( ( c & m2 ) == m2 ) {
+			i += 1;
+		}
+	}
+	return ( codepointLen );
+}
+
+int context_len( char const* prefix ) {
+	char const wb[] = " \t\n\r\v\f-=+*&^%$#@!,./?<>;:`~'\"[]{}()\\|";
+	int i = (int)strlen( prefix ) - 1;
+	int cl = 0;
+	while ( i >= 0 ) {
+		if ( strchr( wb, prefix[i] ) != NULL ) {
+			break;
+		}
+		++ cl;
+		-- i;
+	}
+	return ( cl );
+}
 
 /*
  * convert cursor position from utf8 character space to char space eg. πabc -> π_abc since π is 2 chars long
@@ -101,18 +134,76 @@ void modify_callback(char** line, i32* cursor_pos, void* ud) {
     }
 }
 
+void completion_callback(char const* context, replxx_completions* lc, int* contextLen, void* ud) {
+	char** examples = (char**)( ud );
+	size_t i;
+
+	int utf8ContextLen = context_len( context );
+	int prefixLen = (int)strlen( context ) - utf8ContextLen;
+	*contextLen = utf8str_codepoint_len( context + prefixLen, utf8ContextLen );
+	for (i = 0;	examples[i] != NULL; ++i) {
+		if (strncmp(context + prefixLen, examples[i], utf8ContextLen) == 0) {
+			replxx_add_completion(lc, examples[i]);
+		}
+	}
+}
+
+void colorHook( char const* str_, ReplxxColor* colors_, int size_, void* ud ) {
+	int i = 0;
+	for ( ; i < size_; ++ i ) {
+		if ( isdigit( str_[i] ) ) {
+			colors_[i] = REPLXX_COLOR_BRIGHTMAGENTA;
+		}
+	}
+	if ( ( size_ > 0 ) && ( str_[size_ - 1] == '(' ) ) {
+		replxx_emulate_key_press( ud, ')' );
+		replxx_emulate_key_press( ud, REPLXX_KEY_LEFT );
+	}
+}
+
+void hintHook(char const* context, replxx_hints* lc, int* contextLen, ReplxxColor* c, void* ud) {
+	char** examples = (char**)( ud );
+	int i;
+	int utf8ContextLen = context_len( context );
+	int prefixLen = (int)strlen( context ) - utf8ContextLen;
+	*contextLen = utf8str_codepoint_len( context + prefixLen, utf8ContextLen );
+	if ( *contextLen > 0 ) {
+		for (i = 0;	examples[i] != NULL; ++i) {
+			if (strncmp(context + prefixLen, examples[i], utf8ContextLen) == 0) {
+				replxx_add_hint(lc, examples[i]);
+			}
+		}
+	}
+}
+
 void init() {
-    setlocale(LC_CTYPE, "");
+#define MAX_EXAMPLE_COUNT 128
+    char* examples[MAX_EXAMPLE_COUNT + 1] = {
+        "db", "hello", "hallo", "hans", "hansekogge", "seamann", "quetzalcoatl", "quit", "power", NULL
+    };
 	replxx = replxx_init();
-	replxx_install_window_change_handler(replxx);
+    replxx_install_window_change_handler(replxx);
+
+	const char* file = "./replxx_history.txt";
+	replxx_history_load( replxx, file );
+    replxx_set_indent_multiline( replxx, 0 );
     replxx_set_modify_callback(replxx, modify_callback, NULL);
+
+	/*replxx_set_completion_callback(replxx, completion_callback, examples );*/
+    /*replxx_set_highlighter_callback( replxx, colorHook, replxx );*/
+	/*replxx_set_hint_callback( replxx, hintHook, examples );*/
 }
 
 const BQNV input() {
     u32 buffer[1024] = {0};
     u32 *code_points = buffer;
     const char* utf8_bytes=replxx_input(replxx, "   ");
+	/*char const* result = NULL;*/
+    do {
+        utf8_bytes = replxx_input( replxx, "    " );
+    } while ( ( utf8_bytes == NULL ) && ( errno == EAGAIN ) );
 
+    printf("%s\n",utf8_bytes);
     if (utf8_bytes==NULL) { return bqn_makeF64(0); }
 
     ux n=strlen(utf8_bytes);
@@ -171,5 +262,6 @@ i32 main(i32 argc, char* argv[]) {
     /*while (true) { */
         input();
     /*}*/
+	replxx_end( replxx );
     return 0;
 }

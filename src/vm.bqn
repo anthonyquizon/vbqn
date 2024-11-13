@@ -206,7 +206,7 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
   Step _while_ ⊢ 1
-  stack.rslt
+  stack.rslt‿(pos-1)
 }
 
 # Wrap namespace to vm compatable namespace 
@@ -218,6 +218,12 @@ AdaptConst ← {
 ; 𝕊 𝕩: 𝕩
 }
 
+#Tree ← {
+  #𝕊:
+  ## if current body
+  #•Show {𝕩.v}¨𝕩.vars
+  #𝕊 𝕩.parent
+#}
 
 # Evaluate a program, given the compiler output
 { file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
@@ -227,11 +233,12 @@ AdaptConst ← {
     {parent 𝕊 args:
       file Push start⊑¨loc # TODO push bytecode
       env ← MakeEnv parent‿vars‿names‿export
+      #Tree env
       (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
       {(∾⟜⟨start⊑¨loc⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
-      out←RunBC bc‿start‿env‿loc
-      Pop @
+      out‿end←RunBC bc‿start‿env‿loc
+      file Pop (start⊑⊑loc)‿(end⊑0⊑loc)
       out
     }
   }¨ bodyInfo

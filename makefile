@@ -16,8 +16,11 @@ _extern/cbqn:
 _extern/sqlite/sqlite3.o: _extern/sqlite/sqlite3.c
 	$(CC) -c ./_extern/sqlite/sqlite3.c -o ./_extern/sqlite/sqlite3.o
 
-debug: _scratch/debug.c 
-	$(CC) ./_extern/sqlite/sqlite3.o _scratch/debug.c $(cflags) -O0 -g -o debug
+#debug: src/lib.c 
+	#$(CC) ./_extern/sqlite/sqlite3.o src/lib.c $(cflags) -O0 -g -o debug
+
+debug: _scratch/repl.c 
+	$(CC) ./_extern/sqlite/sqlite3.o _scratch/repl.c $(cflags) -O0 -g -o debug
 
 lib.so: src/lib.c _extern/sqlite/sqlite3.o
 	$(CC) ./_extern/sqlite/sqlite3.o src/lib.c -g -shared $(cflags)  -o lib.so  

@@ -33,7 +33,6 @@ Import ⇐ {
       •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
       •Exit 1
     }
-    #c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
     c ← (⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile)⎊Catch src
 
     r ← file VM c

@@ -78,14 +78,12 @@ bodies ⇐ {
   s ⇐ MakeStack ⟨⟩
 
   Push⇐{ file 𝕊 i‿·:
-    ⟨lines, cols⟩←filem.Get file
     k←i∾⟨file⟩
 
     Insert←{ 𝕊:
-      line←i⊑lines ⋄ col←i⊑cols
       id ←(bodym.Count @)
       k bodym.Set id
-      sql.Exec "insert into bodies(id, file, line, col) values ({}, '{}', {}, {})" Fmt id‿file‿line‿col
+      sql.Exec "insert into bodies(id, file) values ({}, '{}')" Fmt id‿file
       id
     }
 
@@ -94,7 +92,13 @@ bodies ⇐ {
     s.Push {id⇐id ⋄ file⇐file}
   }
 
-  Pop⇐{ 𝕊: (⊑s.Pop 1) }
+  Pop⇐{ file 𝕊 start‿end: 
+    ⟨lines, cols⟩←filem.Get file
+    start_line←start⊑lines ⋄ end_line←end⊑lines
+    start_col←start⊑cols ⋄ end_col←end⊑cols
+    ⟨id⟩←(⊑s.Pop 1) 
+    sql.Exec •Show "update bodies set start_line={}, end_line={}, start_col={}, end_col={} where id={}" Fmt start_line‿end_line‿start_col‿end_col‿id
+  }
   Peek⇐s.Peek
 }
 
