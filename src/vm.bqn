@@ -157,7 +157,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   21‿(       {s𝕊e‿·: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
   26‿(       {s𝕊e‿·: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
   27‿(       {s𝕊e‿·: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
-  # Application w‿·ith Nothing
+  # Application with Nothing
   18‿(       {s𝕊e‿·: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
   19‿(       {s𝕊e‿·: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
   23‿(       {s𝕊e‿·: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
@@ -223,7 +223,6 @@ AdaptConst ← {
 { file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
   bodies ← {start‿vars‿names‿export:
-
     # Called when the body is evaluated
     {parent 𝕊 args:
       file Push start⊑¨loc # TODO push bytecode

@@ -16,8 +16,24 @@ Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
 ; · 𝕊 𝕩 : import_cache.Has 𝕩 ? import_cache.Get 𝕩
 ; 𝕨 𝕊 𝕩 : 
-    ⟨src, file⟩←𝕨 ctx.Push 𝕩
-    c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
+    ⟨src, file, lines⟩←𝕨 ctx.Push 𝕩
+    # FIXME cleanup
+    Catch ← { 𝕊:
+      ⟨loc, msg⟩← •CurrentError @
+      s‿e←loc↩⥊loc
+      m←∨´lines⊸=¨lines⊏˜loc
+      m/↕≠src
+      l←1↓m/src
+      s+↕1+e-s
+      
+      •Out "Error: "∾msg
+      •Out l
+      •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
+      •Exit 1
+    }
+    #c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
+    c ← (⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile)⎊Catch src
+
     r ← file VM c
     𝕩 import_cache.Set r
     ctx.Pop 1 

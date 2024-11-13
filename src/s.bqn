@@ -111,10 +111,12 @@ Ref←{ body‿name 𝕊 file‿i:
   (refm.Has)◶Insert‿refm.Get body‿name
 }
 
-Hash←{
-  𝕩: 6=•Type 𝕩 ? •Hash 0 # TODO implement
-; 𝕩: •Hash 𝕩
-}
+#Hash←{
+  #𝕩: 6=•Type 𝕩 ? •Hash 0 # TODO implement
+#; 𝕩: •Hash 𝕩
+#}
+
+Hash←•Hash
 
 Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
   ⟨id,file⟩←bodies.Peek @ 
@@ -123,6 +125,6 @@ Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
   Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
   n← (valm.Has)◶Cache‿valm.Get Hash v
 
-  sql.Exec "insert into vals(ref, i, type) values ({}, {}, {})" Fmt r‿n‿(•Type v)
+  sql.Exec "insert into vals(ref, data_index, type) values ({}, {}, {})" Fmt r‿n‿(•Type v)
 }
 
