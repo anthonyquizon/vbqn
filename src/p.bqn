@@ -18,15 +18,17 @@ Import ⇐ {
 ; 𝕨 𝕊 𝕩 : 
     ⟨src, file, lines⟩←𝕨 ctx.Push 𝕩
     # FIXME cleanup
-    Catch ← { 𝕊:
+    Catch ← 𝕩⊸{ 𝕊:
       ⟨loc, msg⟩← •CurrentError @
       s‿e←loc↩⥊loc
+      ln←lines⊑˜⊑loc # line number
       m←∨´lines⊸=¨lines⊏˜loc
       m/↕≠src
       l←1↓m/src
       s+↕1+e-s
       
       •Out "Error: "∾msg
+      •Out 𝕨∾":"∾•Fmt ln
       •Out l
       •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
       •Exit 1
