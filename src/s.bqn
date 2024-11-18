@@ -88,8 +88,9 @@ bodies ⇐ {
     }
 
     id←(bodym.Has)◶Insert‿bodym.Get k
-    sql.Exec "insert into history(body, depth) values ({}, {})" Fmt id‿(≠s.s)
-    s.Push {id⇐id ⋄ file⇐file}
+    sql.Exec "insert into calls(body, depth) values ({}, {})" Fmt id‿(≠s.s)
+    call←sql.LastRowId @
+    s.Push {id⇐id ⋄ file⇐file ⋄ call⇐call}
   }
 
   Pop⇐{ file 𝕊 start‿end: 
@@ -103,16 +104,17 @@ bodies ⇐ {
 }
 
 Ref←{ body‿name 𝕊 file‿i:
+  ⟨cols,lines⟩ ← filem.Get file
+  line←i⊑lines ⋄ col←i⊑cols
+  k←body‿name‿line‿col
   Insert←{ 𝕊:
-    ⟨cols,lines⟩ ← filem.Get file
-    line←i⊑lines ⋄ col←i⊑cols
     sql.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿line‿col
     id←sql.LastRowId @
-    body‿name refm.Set id
+    k refm.Set id
     id
   }
 
-  (refm.Has)◶Insert‿refm.Get body‿name
+  (refm.Has)◶Insert‿refm.Get k
 }
 
 #Hash←{
@@ -123,12 +125,13 @@ Ref←{ body‿name 𝕊 file‿i:
 Hash←•Hash
 
 Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
-  ⟨id,file⟩←bodies.Peek @ 
+  ⟨id,file,call⟩←bodies.Peek @ 
   r← id‿name Ref file‿i
 
   Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
   n← (valm.Has)◶Cache‿valm.Get Hash v
 
-  sql.Exec "insert into vals(ref, data_index, type) values ({}, {}, {})" Fmt r‿n‿(•Type v)
+  # TODO current history id
+  sql.Exec "insert into vals(ref, data_index, call, type) values ({}, {}, {}, {})" Fmt r‿n‿call‿(•Type v)
 }
 

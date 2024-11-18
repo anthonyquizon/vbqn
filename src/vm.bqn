@@ -9,6 +9,7 @@
 # - GetF: Get corresponding field from namespace 𝕩
 
 ⟨debug⟩←•Import "log.bqn"
+conf←•Import "conf.bqn"
 ⟨Rec,⟨Push,Pop⟩⇐bodies,ctx⟩←state←•Import "s.bqn"
 
 abort←0
@@ -233,7 +234,6 @@ AdaptConst ← {
     {parent 𝕊 args:
       file Push start⊑¨loc # TODO push bytecode
       env ← MakeEnv parent‿vars‿names‿export
-      #Tree env
       (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
 
       {(∾⟜⟨start⊑¨loc⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩

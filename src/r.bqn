@@ -50,6 +50,11 @@ repl← •ReBqn {repl⇐"loose"⋄ system⇐system}
 
 Eval ← { 𝕊 l:
   n←≠¨⊏opts ⋄ m←∾n{𝕩⍷𝕨↑l}¨⊏opts ⋄ {f←1⊑𝕩⋄F l}˘m/⍉opts # run opts eg. )l
+
+  # get all variables after line in body
+  # inject into repl
+  # auto complete line fragements
+
   {𝕊:•Show Repl⎊•CurrentError l}⍟((0<≠l)∧¬∨´m) @ # run repl
 }
 
