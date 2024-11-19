@@ -1,5 +1,6 @@
 ⟨⟨Fmt⟩⇐strings, ns⟩ ←•Import "util.bqn"
 db←•Import "db.bqn"
+state←•Import "s.bqn"
 init_c  ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "a"‿"input"
 
@@ -53,36 +54,13 @@ Eval ← { 𝕊 l:
   {𝕊:•Show Repl⎊•CurrentError l}⍟((0<≠l)∧¬∨´m) @ # run repl
 }
 
-l←4
-
-Set⇐{ 𝕊:
-  
+Set⇐{ 𝕊 𝕩:
   repl↩•ReBqn {repl⇐"loose"⋄ system⇐system}
   
-  db.Exec •SHow "
-      select name, max(line) from refs 
-        inner join calls on vals.call=calls.id 
-        inner join vals on vals.ref = refs.id 
-        inner join bodies 
-        where   
-            refs.line >= bodies.start_line  and 
-            refs.line <= {}                 and 
-            calls.id={}
-        group by 
-            refs.name
-  " Fmt 4‿2
-  #select DISTINCT * from refs 
-      #inner join calls on vals.call=calls.id 
-      #inner join vals on vals.ref = refs.id 
-      #inner join bodies 
-      #where refs.line <= bodies.end_line 
-          #and refs.line = (SELECT MAX(line) from refs)
-          #and refs.line >= bodies.start_line  
-          #and calls.id=4;
 
-
-  #⟨"","",⟩ Repl ""
-
+  •SHow state.Restore 𝕩
+  #l←Input_c ⟨⟩ 
+  ⟨"","",⟩ Repl "•args {  } •args"
 }
 
 Run⇐{ 

@@ -13,9 +13,9 @@ Path←{•wdpath∾"/"∾𝕩}
 
 db.Reset @
 db.Setup @
-Import ⊑Path¨•args
+#Import ⊑Path¨•args
 #repl.Run ∾•FLines¨"-i"(⊢/˜⊣⊸»∘∨´∘⍷¨)•args
 
-repl.Set ⟨⟩
-repl.Run ⟨⟩
+#repl.Run ⟨⟩
+#repl.Set 4‿2
 

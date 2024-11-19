@@ -203,7 +203,6 @@ const BQNV input() {
         utf8_bytes = replxx_input( replxx, "    " );
     } while (( utf8_bytes == NULL ) && ( errno == EAGAIN ));
 
-    /*printf("%s\n",utf8_bytes);*/
     if (utf8_bytes==NULL) { return bqn_makeF64(0); }
 
     ux n=strlen(utf8_bytes);
@@ -231,47 +230,6 @@ void sqlite_close() { sqlite3_close(db); }
 
 #define SQLITE_QUERY_BUFFER 5000
 
-/*
-int sqlite_callback(void* data, int argc, char** argv, char** col_name) {
-    BQNV* f=(BQNV*)data;
-    BQNV vals[argc];
-
-    for (u32 i=0; i<argc; i++) {
-        u32 buffer[1024] = {0};
-        u32 *code_points = buffer;
-        const char* utf8_bytes=argv[i] ? argv[i] : "NULL";
-
-        ux n=strlen(utf8_bytes);
-        while (( *code_points++ = decode_code_point(&utf8_bytes) ));
-
-        vals[i]=bqn_makeC32Vec(n, buffer);
-    }
-
-    BQNV vec = bqn_makeObjVec(argc, vals);
-    BQNV r= bqn_call1(*f, vec);
-    return bqn_toChar(r);
-}
-
-void sqlite_exec(i32* query, BQNV f) {
-    i32 *code_point_cursor = query;  // Copy of the base pointer so we can move this one around.
-    char utf8_bytes[SQLITE_QUERY_BUFFER];
-    char* start_byte=utf8_bytes;
-    char *end_byte = utf8_bytes + SQLITE_QUERY_BUFFER;
-
-    do {
-        encode_code_point(&start_byte, end_byte, *code_point_cursor++);
-    } while (*(code_point_cursor - 1));
-    *code_point_cursor='\0';
-
-    char *zErrMsg = 0;
-    i32 res = sqlite3_exec(db, utf8_bytes, sqlite_callback, &f, &zErrMsg);
-    if (res != SQLITE_OK){
-        fprintf(stderr, "SQL error: %s\n", zErrMsg);
-        sqlite3_free(zErrMsg);
-    }
-}
-*/
-
 void sqlite_exec(i32* query, BQNV f) {
     i32 *code_point_cursor = query;  
     char utf8_bytes[SQLITE_QUERY_BUFFER];
@@ -284,8 +242,13 @@ void sqlite_exec(i32* query, BQNV f) {
     } while (*(code_point_cursor - 1));
     *code_point_cursor='\0';
 
-    char *zErrMsg = 0;
-    sqlite3_prepare_v2(db, utf8_bytes, -1, &stmt, NULL);
+    u32 res=sqlite3_prepare_v2(db, utf8_bytes, -1, &stmt, NULL);
+    if (res!=SQLITE_OK) {
+        sqlite3_finalize(stmt);
+        const char* err_msg= sqlite3_errmsg(db);
+        fprintf(stderr, "SQL error: %s\n", err_msg);
+        exit(EXIT_FAILURE);
+    }
 
     while (sqlite3_step(stmt) != SQLITE_DONE) {
 		u32 num_cols = sqlite3_column_count(stmt);
@@ -320,10 +283,7 @@ void sqlite_exec(i32* query, BQNV f) {
         BQNV vec = bqn_makeObjVec(num_cols, vals);
         BQNV r= bqn_call1(f, vec);
 
-        if (bqn_toChar(r) != 0){
-            break;
-        };
-
+        if ((int)bqn_toF64(r) != 0) { break; }
 	}
     sqlite3_finalize(stmt);
 }

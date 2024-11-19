@@ -119,3 +119,23 @@ sys⇐{
     𝕩
   }
 }
+
+Restore⇐{
+  acc←⟨⟩
+
+  { acc↩acc∾⟨𝕩⟩ ⋄ 0 } db._Query "
+      select name, vals.data_index from refs 
+        inner join calls on vals.call=calls.id 
+        inner join vals on vals.ref = refs.id 
+        inner join bodies 
+        where   
+            refs.line >= bodies.start_line  and 
+            refs.line <= {}                 and 
+            calls.id={}
+        group by 
+            refs.name
+  " Fmt 𝕩
+
+  {·‿i: •SHow i}¨acc
+  {·‿i: i⊑data}¨acc
+}
