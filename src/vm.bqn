@@ -10,7 +10,7 @@
 
 ⟨debug⟩←•Import "log.bqn"
 conf←•Import "conf.bqn"
-⟨Rec,⟨Push,Pop⟩⇐bodies,ctx⟩←state←•Import "s.bqn"
+⟨⟨Rec⟩⇐val,⟨Push,Pop⟩⇐bodies,ctx⟩←state←•Import "s.bqn"
 
 abort←0
 

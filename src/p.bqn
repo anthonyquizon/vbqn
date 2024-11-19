@@ -51,6 +51,11 @@ FFI ← {
   { •SHow "record ffi" ⋄  𝔽 𝕩 }
 }
 
+Show←{
+  
+  •Show 𝕩
+}
+
 # Lookup table
 systable← ∾<˘⋈˘⍉>⟨
      "args"‿Args

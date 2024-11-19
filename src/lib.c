@@ -197,13 +197,13 @@ void init() {
 const BQNV input() {
     u32 buffer[1024] = {0};
     u32 *code_points = buffer;
-    const char* utf8_bytes=replxx_input(replxx, "   ");
-	/*char const* result = NULL;*/
+    const char* utf8_bytes;
+
     do {
         utf8_bytes = replxx_input( replxx, "    " );
-    } while ( ( utf8_bytes == NULL ) && ( errno == EAGAIN ) );
+    } while (( utf8_bytes == NULL ) && ( errno == EAGAIN ));
 
-    printf("%s\n",utf8_bytes);
+    /*printf("%s\n",utf8_bytes);*/
     if (utf8_bytes==NULL) { return bqn_makeF64(0); }
 
     ux n=strlen(utf8_bytes);
@@ -229,27 +229,103 @@ u32 sqlite_init(const char* name) {
 
 void sqlite_close() { sqlite3_close(db); }
 
-#define SQLITE_BUFFER_LEN 5000
+#define SQLITE_QUERY_BUFFER 5000
 
-void sqlite_exec(i32* query) {
+/*
+int sqlite_callback(void* data, int argc, char** argv, char** col_name) {
+    BQNV* f=(BQNV*)data;
+    BQNV vals[argc];
+
+    for (u32 i=0; i<argc; i++) {
+        u32 buffer[1024] = {0};
+        u32 *code_points = buffer;
+        const char* utf8_bytes=argv[i] ? argv[i] : "NULL";
+
+        ux n=strlen(utf8_bytes);
+        while (( *code_points++ = decode_code_point(&utf8_bytes) ));
+
+        vals[i]=bqn_makeC32Vec(n, buffer);
+    }
+
+    BQNV vec = bqn_makeObjVec(argc, vals);
+    BQNV r= bqn_call1(*f, vec);
+    return bqn_toChar(r);
+}
+
+void sqlite_exec(i32* query, BQNV f) {
     i32 *code_point_cursor = query;  // Copy of the base pointer so we can move this one around.
-    char utf8_bytes[SQLITE_BUFFER_LEN];
+    char utf8_bytes[SQLITE_QUERY_BUFFER];
     char* start_byte=utf8_bytes;
-    char *end_byte = utf8_bytes + SQLITE_BUFFER_LEN;
+    char *end_byte = utf8_bytes + SQLITE_QUERY_BUFFER;
 
     do {
         encode_code_point(&start_byte, end_byte, *code_point_cursor++);
     } while (*(code_point_cursor - 1));
     *code_point_cursor='\0';
 
-    /*printf("UTF-8: %s\n", utf8_bytes);*/
-
     char *zErrMsg = 0;
-    i32 res = sqlite3_exec(db, utf8_bytes, NULL, NULL, &zErrMsg);
+    i32 res = sqlite3_exec(db, utf8_bytes, sqlite_callback, &f, &zErrMsg);
     if (res != SQLITE_OK){
         fprintf(stderr, "SQL error: %s\n", zErrMsg);
         sqlite3_free(zErrMsg);
     }
+}
+*/
+
+void sqlite_exec(i32* query, BQNV f) {
+    i32 *code_point_cursor = query;  
+    char utf8_bytes[SQLITE_QUERY_BUFFER];
+    char* start_byte=utf8_bytes;
+    char *end_byte = utf8_bytes + SQLITE_QUERY_BUFFER;
+    sqlite3_stmt *stmt;
+
+    do {
+        encode_code_point(&start_byte, end_byte, *code_point_cursor++);
+    } while (*(code_point_cursor - 1));
+    *code_point_cursor='\0';
+
+    char *zErrMsg = 0;
+    sqlite3_prepare_v2(db, utf8_bytes, -1, &stmt, NULL);
+
+    while (sqlite3_step(stmt) != SQLITE_DONE) {
+		u32 num_cols = sqlite3_column_count(stmt);
+        BQNV vals[num_cols];
+		
+		for (u32 i = 0; i<num_cols; i++) {
+			switch (sqlite3_column_type(stmt, i)) {
+                case (SQLITE3_TEXT): {
+                    u32 buffer[1024] = {0};
+                    u32 *code_points = buffer;
+                    const char* utf8_bytes=(const char*)sqlite3_column_text(stmt, i);
+                    ux n=strlen(utf8_bytes);
+                    while (( *code_points++ = decode_code_point(&utf8_bytes) ));
+                    vals[i]=bqn_makeC32Vec(n, buffer);
+                    break;
+                }
+                case (SQLITE_INTEGER):{
+                    u32 val=sqlite3_column_int(stmt, i);
+                    vals[i]=bqn_makeF64((f64)val);
+                    break;
+                }
+                case (SQLITE_FLOAT):{
+                    f64 val=sqlite3_column_double(stmt, i);
+                    vals[i]=bqn_makeF64(val);
+                    break;
+                }
+                default:
+                    break;
+            }
+		}
+
+        BQNV vec = bqn_makeObjVec(num_cols, vals);
+        BQNV r= bqn_call1(f, vec);
+
+        if (bqn_toChar(r) != 0){
+            break;
+        };
+
+	}
+    sqlite3_finalize(stmt);
 }
 
 u64 sqlite_last_rowid() {
