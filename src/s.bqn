@@ -80,7 +80,7 @@ bodies ⇐ {
     start_line←start⊑lines ⋄ end_line←end⊑lines
     start_col←start⊑cols ⋄ end_col←end⊑cols
     ⟨id⟩←(⊑s.Pop 1) 
-    db.Exec •Show "update bodies set start_line={}, end_line={}, start_col={}, end_col={} where id={}" Fmt start_line‿end_line‿start_col‿end_col‿id
+    db.Exec "update bodies set start_line={}, end_line={}, start_col={}, end_col={} where id={}" Fmt start_line‿end_line‿start_col‿end_col‿id
   }
   Peek⇐s.Peek
 }
@@ -121,10 +121,8 @@ sys⇐{
 }
 
 Restore⇐{
-  acc←⟨⟩
-
-  { acc↩acc∾⟨𝕩⟩ ⋄ 0 } db._Query "
-      select name, vals.data_index from refs 
+  d←db.Exec "
+    select name, vals.data_index from refs 
         inner join calls on vals.call=calls.id 
         inner join vals on vals.ref = refs.id 
         inner join bodies 
@@ -136,6 +134,9 @@ Restore⇐{
             refs.name
   " Fmt 𝕩
 
-  {·‿i: •SHow i}¨acc
-  {·‿i: i⊑data}¨acc
+  # sort 𝕩 and 𝕨 to be 0 and 1 indices
+  n←⊏⍉>d
+  x←2×¬∨´¨"𝕩"⊸⍷¨n
+  m←⍋x∨´¨"𝕨"⊸⍷¨n
+  {n‿i: ⟨n,i⊑data⟩}¨m⊏d
 }

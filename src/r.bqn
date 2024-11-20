@@ -55,12 +55,14 @@ Eval ← { 𝕊 l:
 }
 
 Set⇐{ 𝕊 𝕩:
-  repl↩•ReBqn {repl⇐"loose"⋄ system⇐system}
-  
-
-  •SHow state.Restore 𝕩
-  #l←Input_c ⟨⟩ 
-  ⟨"","",⟩ Repl "•args {  } •args"
+  repl↩•ReBqn {repl⇐"loose"}
+  n←state.Restore 𝕩
+  {𝕊:
+    l←Input_c ⟨⟩ 
+    •Exit⍟(l=0) 0 # run cancel
+    vars←"⟨{}⟩←2↓•args" Fmt ⟨(1↓∾','⊸∾¨(2↓⊏⍉>n))⟩
+    •Show ⟨"","",1⊏⍉>n⟩ Repl "(⊑•args) { 𝕨 𝕊 𝕩: {} ⋄ {} } 1⊑•args" Fmt ⟨vars, l⟩
+  }•_while_ 1 1 
 }
 
 Run⇐{ 
@@ -71,6 +73,7 @@ Run⇐{
       •Exit⍟(l=0) 0 # run cancel
       Eval l
     }•_while_ 1 1 
+
 ; 𝕊 𝕩: Eval¨𝕩
 }
 

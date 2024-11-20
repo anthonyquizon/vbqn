@@ -10,7 +10,7 @@ Close     ⇐ { 𝕊: Sqlite_close_c ⟨⟩      }
 LastRowId ⇐ { 𝕊: Sqlite_last_rowid_c ⟨⟩ }
 
 _Query ⇐ { Sqlite_exec_c ⟨𝕩∾@+0, 𝕗⟩   }
-Exec⇐{ Sqlite_exec_c ⟨𝕩∾@+0, 0˙⟩ }
+Exec⇐{ d←⟨⟩ ⋄Sqlite_exec_c ⟨𝕩∾@+0, {d↩d∾⟨𝕩⟩}⟩ ⋄ d }
 
 Reset ⇐ { 𝕊:
   •SH "rm"‿"-r"‿"_data/db" 
@@ -19,5 +19,7 @@ Setup ⇐ { 𝕊:
   Init "_data/db"
 
   sql←•FChars "tables.sql"
-  Exec¨';'((⊢-˜+`×¬)∘=⊔⊢)sql
+  sql↩((∨`∧∨⟜«)' '⊸≠)⊸/sql 
+  sql↩';'((⊢-˜+`×¬)∘=⊔⊢)sql
+  Exec¨¯1↓sql
 }
