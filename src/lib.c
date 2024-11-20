@@ -97,15 +97,24 @@ void encode_code_point(char **s, char *end, int code) {
 /*
  * Removes current char and replaces with utf8 string
  */
-void modify_unicode(char *utf8, i32 m, char **line, i32 pos) {
+void modify_unicode(wchar_t wchar, char **line, i32 pos) {
     char* s = *line;
+    char utf8[MB_CUR_MAX];
+    int m = wctomb(utf8, wchar);
+
+    if (m == -1) {
+        printf("Conversion failed.\n");
+        exit(1);
+    } 
+
     i32 n = strlen(s), j=0;
-    char *new_s = *line = calloc(n+m+1, 1);
+    char *new_s = *line = calloc(n+m, sizeof(char));
 
     for (i32 i=0; i<n; i++) { 
         if (i!=(pos-1)) { new_s[j++] = s[i]; } 
         else { for (i32 k=0; k<m; k++) { new_s[j++] = utf8[k]; } }
     }
+
     free(s);
     inBackslash=false;
 }
@@ -120,7 +129,7 @@ void modify_callback(char** line, i32* cursor_pos, void* ud) {
      */
     if (p=='\\') {
         i32 n = strlen(s), j=0;
-        char *new_s = *line = calloc(n-1, 1 );
+        char *new_s = *line = calloc(n-1, sizeof(char));
         for (i32 i=0; i<n; i++) { if (i!=(pos-1)) { new_s[j++] = s[i]; } }
         *cursor_pos-=1;
         inBackslash=true;
@@ -128,8 +137,11 @@ void modify_callback(char** line, i32* cursor_pos, void* ud) {
 
     if (inBackslash) {
         switch (p) {
-            case 'p': { char utf8[]={0xCF,0x80     }; modify_unicode(utf8, 2, line, pos); break; }
-            case '[': { char utf8[]={0xE2,0x86,0x90}; modify_unicode(utf8, 3, line, pos); break; }
+            case 'w': { modify_unicode(L'𝕨', line, pos); break; }
+            case 'x': { modify_unicode(L'𝕩', line, pos); break; }
+            case 'p': { modify_unicode(L'π', line, pos); break; }
+            case '[': { modify_unicode(L'←', line, pos); break; }
+            case '0': { modify_unicode(L'•', line, pos); break; }
         }
     }
 }
@@ -181,6 +193,7 @@ void init() {
     char* examples[MAX_EXAMPLE_COUNT + 1] = {
         "db", "hello", "hallo", "hans", "hansekogge", "seamann", "quetzalcoatl", "quit", "power", NULL
     };
+    setlocale(LC_ALL, "");
 	replxx = replxx_init();
     replxx_install_window_change_handler(replxx);
 
@@ -205,8 +218,8 @@ const BQNV input() {
 
     if (utf8_bytes==NULL) { return bqn_makeF64(0); }
 
-    ux n=strlen(utf8_bytes);
-    while (( *code_points++ = decode_code_point(&utf8_bytes) ));
+    ux n=0;
+    while (( *code_points++ = decode_code_point(&utf8_bytes) )){ n++; };
 
     return bqn_makeC32Vec(n, buffer);
 }
@@ -294,10 +307,13 @@ u64 sqlite_last_rowid() {
 
 
 i32 main(i32 argc, char* argv[]) {
-    init();
-    /*while (true) { */
-        input();
-    /*}*/
-	replxx_end( replxx );
+    u32 utf8=U'𝕩'; 
+
+    
+    /*init();*/
+    /*[>while (true) { <]*/
+        /*input();*/
+    /*[>}<]*/
+	/*replxx_end( replxx );*/
     return 0;
 }

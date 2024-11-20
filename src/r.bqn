@@ -61,7 +61,8 @@ Set⇐{ 𝕊 𝕩:
     l←Input_c ⟨⟩ 
     •Exit⍟(l=0) 0 # run cancel
     vars←"⟨{}⟩←2↓•args" Fmt ⟨(1↓∾','⊸∾¨(2↓⊏⍉>n))⟩
-    •Show ⟨"","",1⊏⍉>n⟩ Repl "(⊑•args) { 𝕨 𝕊 𝕩: {} ⋄ {} } 1⊑•args" Fmt ⟨vars, l⟩
+    # TODO drop in line
+    •Show ⟨"","",1⊏⍉>n⟩ Repl "(1⊑•args) { 𝕨 𝕊 𝕩: {} ⋄ {} } ⊑•args" Fmt ⟨vars, l⟩
   }•_while_ 1 1 
 }
 
@@ -73,7 +74,6 @@ Run⇐{
       •Exit⍟(l=0) 0 # run cancel
       Eval l
     }•_while_ 1 1 
-
 ; 𝕊 𝕩: Eval¨𝕩
 }
 
