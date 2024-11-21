@@ -42,20 +42,6 @@ ctx ⇐ {
   Pop  ⇐ s.Pop
 }
 
-#trace ⇐ {
-  #s ⇐ MakeStack ⟨⟩
-  #f⇐@
-
-  #Set ⇐ {
-    #𝕊 loc:
-      #⟨col⟩←ctx.Peek @
-      #f↩loc
-  #}
-
-  #Push ⇐ { 𝕊: s.Push f }
-  #Pop  ⇐ s.Pop
-#}
-
 bodies ⇐ {
   s ⇐ MakeStack ⟨⟩
 
@@ -99,7 +85,13 @@ Ref←{ body‿name 𝕊 file‿i:
   (refm.Has)◶Insert‿refm.Get k
 }
 
-Hash←•Hash
+Hash←{
+  # Hash flat namespace otherwise hash pointer
+  𝕊 𝕩 : 6≡•Type𝕩 ? 
+    k←•ns.Keys 𝕩 ⋄ v←𝕩 •ns.Get¨k 
+    •Hash ⊢◶𝕩‿⟨k,v⟩ ∨´3>•Type¨v
+; 𝕊 𝕩 : •Hash 𝕩
+}
 
 val ⇐ {
   Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
