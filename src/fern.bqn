@@ -7,6 +7,11 @@ flags←⟨
   conf.SetDebug‿"-g"
 ⟩
 
+{
+  •Out "Missing input file"
+  •Exit 1
+}⍟(0=≠) ≠•args
+
 Path←{•wdpath∾"/"∾𝕩}
 # TODO consume flag args
 #{ 𝕊 f‿i: F¨i⊸(⊢/˜∨´∘⍷¨) •args}¨flags
@@ -16,6 +21,6 @@ db.Setup @
 Import ⊑Path¨•args
 #repl.Run ∾•FLines¨"-i"(⊢/˜⊣⊸»∘∨´∘⍷¨)•args
 
-#repl.Run ⟨⟩
-repl.Set 4‿2
+repl.Run ⟨⟩
+#repl.Set 4‿2
 
