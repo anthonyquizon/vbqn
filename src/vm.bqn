@@ -98,7 +98,7 @@ MakeEnv ← { 𝕊⟨
   # A namespace is represented as a namespace with one field, Field.
   # 𝕨 ns.Field 𝕩 returns the value of the field with ID 𝕩 in program 𝕨.
   MakeNS ⇐ {𝕤
-    v ← @ ⊣´¨ n ⊔○(e⊸/) ns↓vars  # Lookup table
+    v ⇐ @ ⊣´¨ n ⊔○(e⊸/) ns↓vars  # Lookup table
     Field ⇐ {𝕨𝕊i:
       cross ← 𝕨 { 𝕨1⊘≡𝕩 ? ⊢ ; ⊑ 𝕩.names ⊐ ⊏⟜𝕨.names } program
       (Cross i) ⊑ v

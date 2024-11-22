@@ -85,13 +85,6 @@ Ref←{ body‿name 𝕊 file‿i:
   (refm.Has)◶Insert‿refm.Get k
 }
 
-Hash←{
-  # Hash flat namespace otherwise hash pointer
-  𝕊 𝕩 : 6≡•Type𝕩 ? 
-    k←•ns.Keys 𝕩 ⋄ v←𝕩 •ns.Get¨k 
-    •Hash ⊢◶𝕩‿⟨k,v⟩ ∨´3>•Type¨v
-; 𝕊 𝕩 : •Hash 𝕩
-}
 
 val ⇐ {
   Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
@@ -99,7 +92,7 @@ val ⇐ {
     r← id‿name Ref file‿i
 
     Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
-    n← (valm.Has)◶Cache‿valm.Get Hash v
+    n← (valm.Has)◶Cache‿valm.Get •Hash v
 
     db.Exec "insert into vals(ref, data_index, call, type) values ({}, {}, {}, {})" Fmt r‿n‿call‿(•Type v)
   }
