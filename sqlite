@@ -1,1 +1,1 @@
-litecli _data/db
+sqlite3 _data/db
