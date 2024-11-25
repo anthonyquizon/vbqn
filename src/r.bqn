@@ -1,5 +1,4 @@
 ⟨⟨Fmt⟩⇐strings, ns⟩ ←•Import "util.bqn"
-db←•Import "db.bqn"
 state←•Import "s.bqn"
 init_c  ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "a"‿"input"

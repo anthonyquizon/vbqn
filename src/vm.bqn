@@ -211,31 +211,19 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
 }
 
 # Wrap namespace to vm compatable namespace 
-AdaptConst ← { 
-  𝕊 ns: 6≡•Type ns ?
-    Field ⇐ {p𝕊i:
-      Get ⇐ { 𝕊: ns •ns.Get i⊑p.names }
-    }
-; 𝕊 𝕩: 𝕩
-}
-
-#Tree ← {
-  #𝕊:
-  ## if current body
-  #•Show {𝕩.v}¨𝕩.vars
-  #𝕊 𝕩.parent
-#}
-
 # Evaluate a program, given the compiler output
 { file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  consts↩AdaptConst¨consts
+  consts↩{ # wrap constants to have Field if namespace
+    𝕊 ns: 6≡•Type ns ? Field ⇐ {p𝕊i:Get⇐{𝕊:ns •ns.Get i⊑p.names}}
+  ; 𝕊 𝕩: 𝕩
+  }¨consts 
+
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
       file Push start⊑¨loc # TODO push bytecode
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-
   
       {(∾⟜⟨start⊑¨loc⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
       out‿end←RunBC bc‿start‿env‿loc

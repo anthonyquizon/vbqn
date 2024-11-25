@@ -1,4 +1,3 @@
-db←•Import "db.bqn"
 ⟨⟨Fmt⟩⇐strings⟩←•Import "util.bqn"
 lf←@+10
 
@@ -11,6 +10,32 @@ valm  ⇐ ⟨⟩ •HashMap ⟨⟩
 filem ⇐ ⟨⟩ •HashMap ⟨⟩
 
 data←⟨⟩
+
+db⇐{
+  sqlite_init_c       ← "../lib.so" •FFI "u64"‿"sqlite_init"‿"*u8:c8"
+  sqlite_exec_c       ← "../lib.so" •FFI "u64"‿"sqlite_exec"‿"*u32:c32"‿"a"
+  sqlite_close_c      ← "../lib.so" •FFI ""‿"sqlite_close"
+  sqlite_last_rowid_c ← "../lib.so" •FFI "u64"‿"sqlite_last_rowid"
+
+  Init      ⇐ { Sqlite_init_c ⟨𝕩∾@+0⟩     }
+  Close     ⇐ { 𝕊: Sqlite_close_c ⟨⟩      }
+  LastRowId ⇐ { 𝕊: Sqlite_last_rowid_c ⟨⟩ }
+
+  _Query ⇐ { Sqlite_exec_c ⟨𝕩∾@+0, 𝕗⟩   }
+  Exec⇐{ d←⟨⟩ ⋄Sqlite_exec_c ⟨𝕩∾@+0, {d↩d∾⟨𝕩⟩}⟩ ⋄ d }
+
+  Reset ⇐ { 𝕊:
+    •SH "rm"‿"-r"‿"_data/db" 
+  }
+  Setup ⇐ { 𝕊:
+    Init "_data/db"
+
+    sql←•FChars "tables.sql"
+    sql↩((∨`∧∨⟜«)' '⊸≠)⊸/sql 
+    sql↩';'((⊢-˜+`×¬)∘=⊔⊢)sql
+    Exec¨¯1↓sql
+  }
+}
 
 MakeStack ← {
   s ⇐ 𝕩                          # Stack (a list)
@@ -85,7 +110,6 @@ Ref←{ body‿name 𝕊 file‿i:
   (refm.Has)◶Insert‿refm.Get k
 }
 
-
 val ⇐ {
   Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
     ⟨id,file,call⟩←bodies.Peek @ 
@@ -95,13 +119,6 @@ val ⇐ {
     n← (valm.Has)◶Cache‿valm.Get •Hash v
 
     db.Exec "insert into vals(ref, data_index, call, type) values ({}, {}, {}, {})" Fmt r‿n‿call‿(•Type v)
-  }
-}
-
-sys⇐{
-  Rec⇐{ 𝕊: 
-    # TODO
-    𝕩
   }
 }
 
@@ -120,8 +137,10 @@ Restore⇐{
   " Fmt 𝕩
 
   # sort 𝕩 and 𝕨 to be 0 and 1 indices
+  •Show d
   n←⊏⍉>d
   x←2×¬∨´¨"𝕩"⊸⍷¨n
   m←⍋x∨´¨"𝕨"⊸⍷¨n
   {n‿i: ⟨n,i⊑data⟩}¨m⊏d
 }
+

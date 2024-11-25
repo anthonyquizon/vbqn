@@ -4,6 +4,7 @@ _scratch*
 *.dSYM/
 replxx_history.txt
 lib.so
+_fern.bqn
 db
 
 TODO

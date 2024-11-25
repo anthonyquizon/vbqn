@@ -2,12 +2,9 @@ with (import <nixpkgs> {});
 mkShell {
   buildInputs = [
     entr
-    clang
     replxx
-    lldb
-    libffi
+    cbqn-replxx
     sqlite
-    litecli
   ];
 }
 
