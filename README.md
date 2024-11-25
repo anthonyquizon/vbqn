@@ -1,8 +1,12 @@
 # 𝔽⍷𝕣n
 
-**src**
+## example usage
+`find . | entr -sr "time (cat _fern.bqn | fern src/main.bqn)"`
+
+## src
 - p         provided runtime and system functions
 - s         file state and recorder
 
+## notes 
 loc: ⟨bytecode character start position, bytecode character end position⟩
 
