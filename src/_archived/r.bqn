@@ -1,62 +1,78 @@
-
-init_c ← "../lib.so" •FFI ""‿"init"
+⟨⟨Fmt⟩⇐strings, ns⟩ ←•Import "util.bqn"
+state←•Import "s.bqn"
+init_c  ← "../lib.so" •FFI ""‿"init"
 input_c ← "../lib.so" •FFI "a"‿"input"
-lf←@+10‿13
-win←2 # window of lines previous and next to current line
 
-src←@
+p ← ⟨⟩ •HashMap ⟨⟩ # inspection points
 
-# Lookup table
-systable←⟨
-  "type"‿"out"‿"show"
-  •Type ‿•Out ‿•Show 
+Init_c ⟨⟩
+
+List←{ 
+  𝕩 
+}
+
+Help ← {𝕩 }
+
+Query←{ 
+  𝕊: 𝕩
+  #•Show "query"‿𝕩
+}
+
+History←{ 𝕊:
+  𝕩
+}
+
+# Repl specific operations
+opts←⍉[
+  "?"‿Query
+
+  "?h"‿Help
+  "?help"‿Help
+
+  "?l"‿List
+  "?list"‿List
+  #")r"‿R
+  # TODO explain
+]
+
+system←⟨
+  "show"‿•Show, 
+  "query"‿Query, "q"‿Query,
+  "history"‿History, "h"‿History
 ⟩
 
-  # Lookup table
-FindSys ← {
-  i ← 𝕨⊐𝕩
-  { ! ∾⟨"Unknown system value",(1≠≠𝕩)/"s",":"⟩∾" •"⊸∾¨𝕩 }∘/⟜𝕩⍟(∨´) i=≠𝕨
-  i
-}
-system ← {𝕨⊸FindSys⊏𝕩˙}´systable
+repl← •ReBqn {repl⇐"loose"⋄ system⇐system}
 
-PrintLines ← { src 𝕊 n:
-  l←∾⟨¯1↓⌽n-↕win,n+↕win⟩
-  l↩l/˜(l≥0)∧l<≠src
-  arr← ⊣◶""‿" <"¨(n=l)
-  •Out ln←1↓∾lf⊸∾¨(∾⟜"   "∘•Fmt¨l) ∾¨ (src⊏˜l) ∾¨ arr
-  •Out ""
+Eval ← { 𝕊 l:
+  n←≠¨⊏opts ⋄ m←∾n{𝕩⍷𝕨↑l}¨⊏opts ⋄ {f←1⊑𝕩⋄F l}˘m/⍉opts # run opts eg. )l
+
+  # get all variables after line in body
+  # inject into repl
+  # auto complete line fragements
+
+  {𝕊:•Show Repl⎊•CurrentError l}⍟((0<≠l)∧¬∨´m) @ # run repl
 }
 
-cb←@ # TODO delete
-# TODO line /character positions
+Set⇐{ 𝕊 𝕩:
+  repl↩•ReBqn {repl⇐"loose"}
+  n←state.Restore 𝕩
+  {𝕊:
+    l←Input_c ⟨⟩ 
+    •Exit⍟(l=0) 0 # run cancel
+    vars←"⟨{}⟩←2↓•args" Fmt ⟨(1↓∾','⊸∾¨(2↓⊏⍉>n))⟩
+    # TODO drop in line
+    •Show ⟨"","",1⊏⍉>n⟩ Repl "(1⊑•args) { 𝕨 𝕊 𝕩: {} ⋄ {} } ⊑•args" Fmt ⟨vars, l⟩
+  }•_while_ 1 1 
+}
 
-# f: file
-# TODO repl history
-Repl ⇐ {
-  𝕊 env:
-    Init_c ⟨⟩
-
-    F←•ReBqn {repl⇐"loose"}
-    # TODO load data
+Run⇐{ 
+  𝕊 ⟨⟩: 
     { 𝕊:
-      l←Input_c ⟨⟩ # TODO convert utf-8 to Unicode code point
-      •Exit⍟(l=0) 0
-      F l
-      #env Eval l
-    }•_while_ 1 1
+      l←Input_c ⟨⟩ 
+      •Show l
+      •Exit⍟(l=0) 0 # run cancel
+      Eval l
+    }•_while_ 1 1 
+; 𝕊 𝕩: Eval¨𝕩
 }
 
-Repl @
-
-# TODO query sql
-  # if none reified: 
-    # run functions with call values again
-
-
-#src↩•file.Chars "../test/foo.bqn"
-###•Show 14⊑runtime
-##runtime↩{𝕊:+}¨⌾(0⊸⊏) runtime
-##runtime↩{𝕊:↕}¨⌾(14⊸⊏) runtime
-#c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩ Compile src
-#@‿cb‿3‿src VM c

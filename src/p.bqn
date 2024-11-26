@@ -12,7 +12,7 @@ runtime⇐⟨
 
 import_cache←⟨⟩ •HashMap ⟨⟩ #cached imported files
 
-Import ⇐ {
+Run⇐Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
 ; · 𝕊 𝕩 : import_cache.Has 𝕩 ? import_cache.Get 𝕩
 ; 𝕨 𝕊 𝕩 : 
