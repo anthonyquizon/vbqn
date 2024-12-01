@@ -10,4 +10,6 @@ s.db.Reset @
 s.db.Setup @
 
 Run ⊑Path¨•args
-•SHow •FChars "/dev/fd/0"
+input← •FLines "/dev/fd/0"
+•SHow¨input
+

@@ -1,7 +1,7 @@
 # 𝔽⍷𝕣n
 
 ## example usage
-`find . | entr -sr "time (cat _fern.bqn | fern src/main.bqn)"`
+`find . | entr -sr "time (cat _fern.bqn | fern src/fern.bqn)"`
 
 ## src
 - p         provided runtime and system functions

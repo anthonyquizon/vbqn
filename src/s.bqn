@@ -3,45 +3,29 @@ lf←@+10
 
 # variables to record
 audit ⇐ ⟨⟩
-
-bodym ⇐ ⟨⟩ •HashMap ⟨⟩
-refm  ⇐ ⟨⟩ •HashMap ⟨⟩
-valm  ⇐ ⟨⟩ •HashMap ⟨⟩
-filem ⇐ ⟨⟩ •HashMap ⟨⟩
-
 data←⟨⟩
+facts←⟨⟩
 
-db⇐{
-  sqlite_init_c       ← "../lib.so" •FFI "u64"‿"sqlite_init"‿"*u8:c8"
-  sqlite_exec_c       ← "../lib.so" •FFI "u64"‿"sqlite_exec"‿"*u32:c32"‿"a"
-  sqlite_close_c      ← "../lib.so" •FFI ""‿"sqlite_close"
-  sqlite_last_rowid_c ← "../lib.so" •FFI "u64"‿"sqlite_last_rowid"
-
-  Init      ⇐ { Sqlite_init_c ⟨𝕩∾@+0⟩     }
-  Close     ⇐ { 𝕊: Sqlite_close_c ⟨⟩      }
-  LastRowId ⇐ { 𝕊: Sqlite_last_rowid_c ⟨⟩ }
-
-  _Query ⇐ { Sqlite_exec_c ⟨𝕩∾@+0, 𝕗⟩   }
-  Exec⇐{ d←⟨⟩ ⋄Sqlite_exec_c ⟨𝕩∾@+0, {d↩d∾⟨𝕩⟩}⟩ ⋄ d }
-
-  Reset ⇐ { 𝕊:
-    •SH "rm"‿"-r"‿"_data/db" 
+db←{
+  MatchVar←{ c 𝕊 v‿t: (∨´)◶{𝕊:c∾˘[⟨v⟩,⟨t⟩]}‿{c MatchPart (⊑𝕩/1⊏c)‿t} ⟨v⟩⍷⊏c }
+  MatchPart←{
+    @ 𝕊 ·   : @
+  ; c  𝕊 p‿t: '?'=⊑ p ? c MatchVar p‿t                                                                  #@a
+  ; c  𝕊 p‿t: p≡t ? c
+  ; ·  𝕊 ·  : @
   }
-  Setup ⇐ { 𝕊:
-    Init "_data/db"
-
-    sql←•FChars "tables.sql"
-    sql↩((∨`∧∨⟜«)' '⊸≠)⊸/sql 
-    sql↩';'((⊢-˜+`×¬)∘=⊔⊢)sql
-    Exec¨¯1↓sql
-  }
+  MatchPattern←{ c 𝕊 p‿t: c MatchPart˜´ p⋈¨t }
+  QuerySingle←{ c 𝕊 p‿db: (⊣/˜@⊸≢¨){ c MatchPattern p‿𝕩 }¨<˘db }
+  QueryWhere←{ 𝕊 p‿db: ⟨[⟨⟩,⟨⟩]⟩ {∾(QuerySingle⟜(𝕨‿db))¨𝕩}´p }
+  Actualize←{ c←𝕨 ⋄ m←('?'=⊑)¨𝕩 ⋄ {(1⊏c)⊏˜𝕩⊐˜⊏c}⌾(m⊸/) 𝕩 }
+  Query←{ 𝕊 f‿w‿db: Actualize⟜f¨QueryWhere w‿db }
 }
 
 MakeStack ← {
-  s ⇐ 𝕩                          # Stack (a list)
-  Push ⇐ {s∾↩<𝕩 ⋄ 𝕩}                 # Push a value
-  Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
-  Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                # Return but don't pop top value
+  s ⇐ 𝕩                                                                                               # Stack (a list)
+  Push ⇐ {s∾↩<𝕩 ⋄ 𝕩}                                                                                  # Push a value
+  Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s}                                                                      # Pop 𝕩 values; return as list
+  Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                                                                          # Return but don't pop top value
 }
 
 
@@ -81,6 +65,7 @@ bodies ⇐ {
     }
 
     id←(bodym.Has)◶Insert‿bodym.Get k
+
     db.Exec "insert into calls(body, depth) values ({}, {})" Fmt id‿(≠s.s)
     call←db.LastRowId @
     s.Push {id⇐id ⋄ file⇐file ⋄ call⇐call}
@@ -91,7 +76,8 @@ bodies ⇐ {
     start_line←start⊑lines ⋄ end_line←end⊑lines
     start_col←start⊑cols ⋄ end_col←end⊑cols
     ⟨id⟩←(⊑s.Pop 1) 
-    db.Exec "update bodies set start_line={}, end_line={}, start_col={}, end_col={} where id={}" Fmt start_line‿end_line‿start_col‿end_col‿id
+    facts↩facts∾⟨100, "body/", ⟩
+    #db.Exec "update bodies set start_line={}, end_line={}, start_col={}, end_col={} where id={}" Fmt start_line‿end_line‿start_col‿end_col‿id
   }
   Peek⇐s.Peek
 }
@@ -101,7 +87,7 @@ Ref←{ body‿name 𝕊 file‿i:
   line←i⊑lines ⋄ col←i⊑cols
   k←body‿name‿line‿col
   Insert←{ 𝕊:
-    db.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿line‿col
+    #db.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿line‿col
     id←db.LastRowId @
     k refm.Set id
     id
@@ -118,7 +104,7 @@ val ⇐ {
     Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
     n← (valm.Has)◶Cache‿valm.Get •Hash v
 
-    db.Exec "insert into vals(ref, data_index, call, type) values ({}, {}, {}, {})" Fmt r‿n‿call‿(•Type v)
+    #db.Exec "insert into vals(ref, data_index, call, type) values ({}, {}, {}, {})" Fmt r‿n‿call‿(•Type v)
   }
 }
 
