@@ -1,36 +1,14 @@
-⟨⟨Fmt⟩⇐strings⟩←•Import "util.bqn"
+db←•Import "d.bqn"
+⟨⟨Fmt⟩⇐strings⟩←•Import "u.bqn"
 lf←@+10
 
 # variables to record
 audit ⇐ ⟨⟩
-data←⟨⟩
 filem←⟨⟩•HashMap⟨⟩
 bodym←⟨⟩•HashMap⟨⟩
-refm←⟨⟩•HashMap⟨⟩
-valm←⟨⟩•HashMap⟨⟩
-
-db←{
-  i⇐0
-  s⇐0‿3⥊⟨⟩
-  Insert⇐{ s (>Fmt¨ i⊸∾¨((𝕨∾'/')⊸∾)⌾⊑¨𝕩)⊸∾↩ ⋄ (i 1⊸+↩) ⊢ i } 
-  MatchVar ←{ c 𝕊 v‿t: (∨´)◶{𝕊:c∾˘[⟨v⟩,⟨t⟩]}‿{c MatchPart (⊑𝕩/1⊏c)‿t} ⟨v⟩⍷⊏c }
-  MatchPart←{
-   @ 𝕊 ·   : @
-  ;c 𝕊 p‿t: '?'=⊑ p ? c MatchVar p‿t                                                                  #@a
-  ;c 𝕊 p‿t: p≡t ? c
-  ;· 𝕊 ·  : @
-  }
-  MatchPattern←{ c 𝕊 p‿t: c MatchPart˜´ p⋈¨t }
-  QuerySingle ←{ c 𝕊 p‿db: (⊣/˜@⊸≢¨){ c MatchPattern p‿𝕩 }¨<˘db }
-  QueryWhere ←{ 𝕊 p‿db: ⟨[⟨⟩,⟨⟩]⟩ {∾(QuerySingle⟜(𝕨‿db))¨𝕩}´p }
-  Actualize←{ c←𝕨 ⋄ m←('?'=⊑)¨𝕩 ⋄ {(1⊏c)⊏˜𝕩⊐˜⊏c}⌾(m⊸/) 𝕩 }
-  Query←{ 
-    db 𝕊 ⟨f,w⟩: db 𝕊 ⟨f,w,⟨⟩⟩
-  ; db 𝕊 f‿w‿l: 
-    r←Actualize⟜f¨db⊸QueryWhere w 
-    r/˜∧´(1⊑¨l) {∨´¨(𝕨)⊸⍷¨𝕩⊸⊑¨r}¨{ ⊑/(⊑𝕩)⊸≡¨f}¨l  # filter 'like' query
-  }
-}
+refm ←⟨⟩•HashMap⟨⟩
+valm ←⟨⟩•HashMap⟨⟩
+data ←⟨⟩
 
 MakeStack ← {
   s ⇐ 𝕩                                                                                               # Stack (a list)
@@ -44,9 +22,6 @@ ctx ⇐ {
   Push ⇐ { args 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") s.Peek @ 
     Cache←{
-      
-
-
       file  ⇐ f
       args  ⇐ args 
       src   ⇐ •file.Chars 𝕩 
@@ -82,8 +57,11 @@ bodies ⇐ {
     start_line←start⊑lines ⋄ end_line←end⊑lines
     start_col←start⊑cols ⋄ end_col←end⊑cols
     ⟨id⟩←(⊑s.Pop 1) 
-    #"body" db.Insert ⟨"bodies/start"‿""⟩
-    #db.Exec "update bodies set start_line={}, end_line={}, start_col={}, end_col={} where id={}" Fmt start_line‿end_line‿start_col‿end_col‿id
+    "body_bounds" db.Insert ⟨
+      "body"‿id, 
+      "start_line"‿start_line, "end_line"‿end_line
+      "start_col"‿start_col,   "end_col"‿end_col
+    ⟩
   }
   Peek⇐s.Peek
 }
@@ -93,27 +71,18 @@ Ref←{ body‿name 𝕊 file‿i:
   line←i⊑lines ⋄ col←i⊑cols
   k←body‿name‿line‿col
   Insert←{ 𝕊:
-    #db.Exec "insert into refs(body, name, line, col) values ({}, '{}', {}, {})" Fmt body‿name‿line‿col
-    id←db.LastRowId @
-    k refm.Set id
-    id
+    id←"refs" db.Insert ⟨"body"‿body, "name"‿name, "line"‿line, "col"‿col⟩
+    k refm.Set id ⋄ id
   }
-
   (refm.Has)◶Insert‿refm.Get k
 }
 
 val ⇐ {
   Rec⇐{ name‿⟨i,·⟩ 𝕊 v:
     ⟨id,file,call⟩←bodies.Peek @ 
-    r← id‿name Ref file‿i
-
+    ref← id‿name Ref file‿i
     Cache←{𝕊: n←≠data ⋄ data↩data∾⟨v⟩ ⋄ (𝕩⊸valm.Set)⊸⊢n }
-    n← (valm.Has)◶Cache‿valm.Get •Hash v
-
-    #db.Exec "insert into vals(ref, data_index, call, type) values ({}, {}, {}, {})" Fmt r‿n‿call‿(•Type v)
-    #@a
+    index← (valm.Has)◶Cache‿valm.Get •Hash v
+    "vals" db.Insert ⟨"ref"‿ref, "index"‿index, "call"‿call, "type"‿(•Type v)⟩
   }
 }
-
-# TODO post processing
-# unique bodies

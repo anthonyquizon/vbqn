@@ -33,7 +33,8 @@ Run⇐Import ⇐ {
       •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
       •Exit 1
     }
-    c ← (⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile)⎊Catch src
+    #c ← (⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile)⎊Catch src
+    c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile src
 
     r ← file VM c
     𝕩 import_cache.Set r
