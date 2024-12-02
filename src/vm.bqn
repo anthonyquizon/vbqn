@@ -8,8 +8,6 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 
-⟨debug⟩←•Import "util.bqn"
-conf←•Import "conf.bqn"
 ⟨⟨Rec⟩⇐val,⟨Push,Pop⟩⇐bodies,ctx⟩←state←•Import "s.bqn"
 
 abort←0
@@ -36,9 +34,7 @@ MakeVar ← { program 𝕊 id:
 # Other kinds of references, and reference utilities
 ref ← {
   # Constant-matching reference, like 𝕊2: in a header
-  Matcher ⇐ {𝕊 const:
-    SetQ ⇐ const˙ ≢ ⊢
-  }
+  Matcher ⇐ {𝕊 const: SetQ ⇐ const˙ ≢ ⊢ }
   # Array destructuring ⟨a,b,c⟩←
   Array ⇐ {𝕊 arr:
     Get  ⇐ {𝕩.Get@}¨ arr˙
@@ -195,13 +191,9 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Step ← {𝕊:
     l←pos⊑¨loc
 
-    "stack" Debug stack.s
-    "bc"    Debug (pos↓bc)
-    
     op ← (Next@) ⊑ ops
     op ↩ Op next
 
-    #stack Op⎊Error env‿l
     stack Op env‿l
     (¬abort)∧stack.cont  # Changes to 0 on return or abort
   }
