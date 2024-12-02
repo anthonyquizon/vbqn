@@ -1,3 +1,0 @@
-# test schema
-find src | entr -r sh -c "sqlite3 _data/test < src/tables.sql && echo 'sql syntax ok'"
-

@@ -1,3 +1,3 @@
 #! /usr/bin/env bash
 export TIMEFORMAT='%3R'
-find . -name '*.bqn' -o -name 'fern' -o -name '*.sql' -o -name '*.c' -o -name '*.test' | entr -rs "time (cat _fern.bqn | fern $1)"
+find . -name '*.bqn' | entr -rs "time (cat _fern.bqn | fern $1)"
