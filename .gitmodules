@@ -1,0 +1,3 @@
+[submodule "bqn"]
+	path = bqn
+	url = https://github.com/mlochbaum/BQN.git

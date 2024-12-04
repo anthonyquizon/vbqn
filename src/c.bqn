@@ -1,1 +1,1 @@
-../_extern/bqn/src/c.bqn
+../bqn/src/c.bqn

@@ -1,1 +1,1 @@
-../_extern/bqn/src/glyphs.bqn
+../bqn/src/glyphs.bqn

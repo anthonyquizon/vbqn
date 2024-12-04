@@ -8,7 +8,7 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 
-⟨⟨Rec⟩⇐val,⟨Push,Pop⟩⇐bodies,ctx⟩←state←•Import "s.bqn"
+⟨⟨Rec⟩⇐val,⟨Push,Pop⟩⇐bodies⟩←•Import "s.bqn"
 
 abort←0
 
@@ -109,7 +109,7 @@ VO ← { d←𝕏@, s←𝕏@, s⊑·{𝕩.vars}{𝕩.parent}⍟d }
 # Namespace from environment
 Namespace ← {𝕩.MakeNS@}
 # Read field 𝕨 from program 𝕩, where 𝕨 is the environment and index
-GetField ← { e‿i 𝕊 𝕩:
+GetField ← { e‿i 𝕊 𝕩: 
   "Key lookup in non-namespace" ! 6=•Type𝕩
   (e.program 𝕩.Field i).Get @
 }

@@ -1,5 +1,3 @@
-conf←•Import "conf.bqn"
-
 strings⇐{
   IsStr←(0=•Type)◶⟨0, 1∧´2=•Type¨⟩
 
