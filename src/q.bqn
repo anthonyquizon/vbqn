@@ -1,9 +1,8 @@
-s       ←    •Import "s.bqn"
 gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
-⟨ctx⟩   ←    •Import "./s.bqn"
 
+lf←@+10
 system⇐@
 runtime⇐⟨
  +,-,×,÷,⋆,√,⌊,⌈,|,¬,∧,∨,<,>,≠,=,≤,≥,≡,≢,⊣,⊢,⥊,∾,≍,⋈,↑,↓,↕,«,»,⌽,⍉,/,⍋,⍒,⊏,⊑,⊐,⊒,∊,⍷,⊔,!,
@@ -11,16 +10,43 @@ runtime⇐⟨
  ∘,○,⊸,⟜,⌾,⊘,◶,⎉,⚇,⍟,⎊,
 ⟩
 
-import_cache←⟨⟩ •HashMap ⟨⟩ #cached imported files
+file_map  ←⟨⟩ •HashMap ⟨⟩
+import_map←⟨⟩ •HashMap ⟨⟩ #cached imported files
+
+Fmt←{ 
+  file‿args ⇐ 𝕩
+  src   ⇐ •file.Chars file
+  cols  ⇐ ∾+`¨1¨¨⊔+`src=lf
+  lines ⇐ 1++`src=lf 
+}
+
+ctx ⇐ {
+  s ⇐ ⟨⟩
+
+  Push ⇐ { args 𝕊 𝕩:
+    f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") Peek @
+    (file_map.Set⟜Fmt⟜(f‿args))⍟(¬∘file_map.Has) f
+    s∾↩< { cwd⇐•file.Parent f }
+    file_map.Get f
+  }
+
+  Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                 # Return but don't pop top value
+  Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s}             # Pop 𝕩 values; return as list
+}
 
 Run⇐Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
-; · 𝕊 𝕩 : import_cache.Has 𝕩 ? import_cache.Get 𝕩
+; · 𝕊 𝕩 : import_map.Has 𝕩 ? import_map.Get 𝕩
 ; 𝕨 𝕊 𝕩 : 
     ⟨src, file, lines⟩←𝕨 ctx.Push 𝕩
+    •Show src=lf
+    #•Show src∊"#?"
+    # TODO parse comments - if parse failed 
+
     c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile src
+    # TODO return values from lines
     r ← file VM c
-    𝕩 import_cache.Set r
+    𝕩 import_map.Set r
     ctx.Pop 1 
     r
 }

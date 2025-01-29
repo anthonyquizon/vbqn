@@ -7,20 +7,13 @@
 # - SetU: Change value
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
-
-⟨⟨Rec⟩⇐val,⟨Push,Pop⟩⇐bodies⟩←•Import "s.bqn"
-
-abort←0
-
-MakeVar ← { program 𝕊 id:
+MakeVar ← { program 𝕊 name:
   v←@  # Value
-
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
-    Get  ↩ {𝕊:v}
-    SetU ↩ { 𝕨 {(id⊑program.names)‿𝕨 Rec 𝕩}⍟(¯1≢id) 𝕩 ⋄ v↩𝕩 }
-    𝕨 SetU 𝕩
+    Get ↩ {𝕊:v}
+    (SetU ↩ {v↩𝕩}) 𝕩
   }
   SetQ ⇐ 0∘SetN
   GetC ⇐ {
@@ -28,35 +21,36 @@ MakeVar ← { program 𝕊 id:
     Get↩SetU↩SetN↩!∘"Internal error: Variable used after clear"
     r
   }
-  GetF ⇐ {program 𝕩.Field id}
+  GetF ⇐ {program 𝕩.Field name}
 }
 
 # Other kinds of references, and reference utilities
 ref ← {
   # Constant-matching reference, like 𝕊2: in a header
-  Matcher ⇐ {𝕊 const: SetQ ⇐ const˙ ≢ ⊢ }
+  Matcher ⇐ {𝕊 const:
+    SetQ ⇐ const˙ ≢ ⊢
+  }
   # Array destructuring ⟨a,b,c⟩←
   Array ⇐ {𝕊 arr:
     Get  ⇐ {𝕩.Get@}¨ arr˙
     # Common code for all setter functions
     # 𝕨S𝕩 sets reference 𝕨 to 𝕩, and e indicates error handling
     al ← ∨´ {⟨al⟩:al;0}¨ arr
-
     _set_ ← {S _𝕣_ e:
       Err ← {(e∾": "∾𝕩)!e≡@ ⋄ ⟨1⟩} # e≡@ indicates SetQ, which can't error
       c ← (e≡@) ⊑ {𝔽}‿{𝔽⎊1}        # GetF or Get in F can error
       # Get field for reference 𝕨 from namespace, if possible
       F ← {⟨G⇐GetF⟩𝕊𝕩:(G𝕩).Get@ ; !Err"Cannot extract non-name from namespace"}
       {
-        𝕨𝕊𝕩: 0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
-                   (⟨𝕨⟩⊸∾¨arr) ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
-        𝕨𝕊𝕩: 6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
+        0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
+                   arr ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
+        6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
         Err "Multiple targets but atomic value"
       }
     }
-    SetN ⇐   {l‿r𝕊𝕩:l r.SetN𝕩}_set_"←"
-    SetU ⇐   {l‿r𝕊𝕩:l r.SetU𝕩}_set_"↩"
-    SetQ ⇐ ∨´{l‿r𝕊𝕩:l r.SetQ𝕩}_set_@ 
+    SetN ⇐    {𝕨.SetN𝕩}_set_"←"
+    SetU ⇐    {𝕨.SetU𝕩}_set_"↩"
+    SetQ ⇐ ∨´ {𝕨.SetQ𝕩}_set_@
     # Create a merged reference array based on this one
     Merge ⇐ {𝕊:
       Split ← {
@@ -94,7 +88,7 @@ MakeEnv ← { 𝕊⟨
   # A namespace is represented as a namespace with one field, Field.
   # 𝕨 ns.Field 𝕩 returns the value of the field with ID 𝕩 in program 𝕨.
   MakeNS ⇐ {𝕤
-    v ⇐ @ ⊣´¨ n ⊔○(e⊸/) ns↓vars  # Lookup table
+    v ← @ ⊣´¨ n ⊔○(e⊸/) ns↓vars  # Lookup table
     Field ⇐ {𝕨𝕊i:
       cross ← 𝕨 { 𝕨1⊘≡𝕩 ? ⊢ ; ⊑ 𝕩.names ⊐ ⊏⟜𝕨.names } program
       (Cross i) ⊑ v
@@ -109,7 +103,7 @@ VO ← { d←𝕏@, s←𝕏@, s⊑·{𝕩.vars}{𝕩.parent}⍟d }
 # Namespace from environment
 Namespace ← {𝕩.MakeNS@}
 # Read field 𝕨 from program 𝕩, where 𝕨 is the environment and index
-GetField ← { e‿i 𝕊 𝕩: 
+GetField ← { e‿i 𝕊 𝕩:
   "Key lookup in non-namespace" ! 6=•Type𝕩
   (e.program 𝕩.Field i).Get @
 }
@@ -120,7 +114,7 @@ skipMark ← {⇐}  # Indicates body aborted instead of returning
 
 # Execution stack: every body evaluation makes one of these
 MakeStack ← {
-  s ⇐ 𝕩                          # Stack (a list)
+  s ← 𝕩                          # Stack (a list)
   cont ⇐ 1                       # Whether to continue execution
   rslt ⇐ skipMark                # Result: skipMark to abort current body
   Push ⇐ {s∾↩<𝕩}                 # Push a value
@@ -136,91 +130,73 @@ MakeStack ← {
 # called on the stack s and environment e at evaluation time.
 ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   # Constants and drop
-   0‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push         i⊑e.program.consts } }
-   1‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e {𝕎𝕩}˜ i⊑e.program.blocks } }
-   6‿(       {s𝕊e‿·: s.Pop 1 }˙)
+   0‿{i←𝕏@ ⋄ {s𝕊e: s.Push         i⊑e.program.consts } }
+   1‿{i←𝕏@ ⋄ {s𝕊e: s.Push e {𝕎𝕩}˜ i⊑e.program.blocks } }
+   6‿(       {s𝕊e: s.Pop 1 }˙)
   # Returns
-   7‿(       {s𝕊e‿·: 0 s.Ret ⊑s.Pop 1 }˙)
-   8‿(       {s𝕊e‿·: 1 s.Ret Namespace e }˙)
+   7‿(       {s𝕊e: 0 s.Ret ⊑s.Pop 1 }˙)
+   8‿(       {s𝕊e: 1 s.Ret Namespace e }˙)
   # Arrays
-  11‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push           ⌽s.Pop i } }
-  12‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push ref.Array ⌽s.Pop i } }
-  13‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push > ⌽s.Pop i } }
-  14‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
+  11‿{i←𝕏@ ⋄ {s𝕊e: s.Push           ⌽s.Pop i } }
+  12‿{i←𝕏@ ⋄ {s𝕊e: s.Push ref.Array ⌽s.Pop i } }
+  13‿{i←𝕏@ ⋄ {s𝕊e: s.Push > ⌽s.Pop i } }
+  14‿{i←𝕏@ ⋄ {s𝕊e: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
-  16‿(       {s𝕊e‿·: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
-  17‿(       {s𝕊e‿·: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
-  20‿(       {s𝕊e‿·: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
-  21‿(       {s𝕊e‿·: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
-  26‿(       {s𝕊e‿·: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
-  27‿(       {s𝕊e‿·: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
+  16‿(       {s𝕊e: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
+  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
+  20‿(       {s𝕊e: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
+  21‿(       {s𝕊e: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
+  26‿(       {s𝕊e: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
+  27‿(       {s𝕊e: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
   # Application with Nothing
-  18‿(       {s𝕊e‿·: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
-  19‿(       {s𝕊e‿·: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
-  23‿(       {s𝕊e‿·: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
-  22‿(       {s𝕊e‿·: "Left argument required" ! nothing≢s.Peek@ }˙)
+  18‿(       {s𝕊e: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
+  19‿(       {s𝕊e: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
+  23‿(       {s𝕊e: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
+  22‿(       {s𝕊e: "Left argument required" ! nothing≢s.Peek@ }˙)
   # Variables
-  32‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push (V e).Get @ } }
-  34‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push (V e).GetC@ } }
-  33‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push  V e        } }
+  32‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).Get @ } }
+  34‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).GetC@ } }
+  33‿{v←VO𝕩⋄ {s𝕊e: s.Push  V e        } }
   # Headers
-  42‿(       {s𝕊e‿·: {0:s.Skip@; 1:@; 𝕊:!"Predicate value must be 0 or 1"} ⊑s.Pop 1 }˙)
-  43‿(       {s𝕊e‿·: s.Push ref.Matcher ⊑s.Pop 1 }˙)
-  44‿(       {s𝕊e‿·: s.Push ref.not }˙)
+  42‿(       {s𝕊e: {0:s.Skip@; 1:@; 𝕊:!"Predicate value must be 0 or 1"} ⊑s.Pop 1 }˙)
+  43‿(       {s𝕊e: s.Push ref.Matcher ⊑s.Pop 1 }˙)
+  44‿(       {s𝕊e: s.Push ref.not }˙)
   # Assignment
-  47‿(       {s𝕊e‿l: s.Skip⍟⊢{r‿  v: l r.SetQ   v           } s.Pop 2 }˙)  # r:
-  48‿(       {s𝕊e‿l: s.Push  {r‿  v: (l⊸r.SetN)⊸⊢ v       } s.Pop 2 }˙)  # r  ←v
-  49‿(       {s𝕊e‿l: s.Push  {r‿  v: (l⊸r.SetU)⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
-  50‿(       {s𝕊e‿l: s.Push  {r‿f‿x: (l⊸r.SetU)⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
-  51‿(       {s𝕊e‿l: s.Push  {r‿f  : (l⊸r.SetU)⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
+  47‿(       {s𝕊e: s.Skip⍟⊢{r‿  v: r.SetQ   v           } s.Pop 2 }˙)  # r:
+  48‿(       {s𝕊e: s.Push { r‿  v: r.SetN⊸⊢ v           } s.Pop 2 }˙)  # r  ←v
+  49‿(       {s𝕊e: s.Push { r‿  v: r.SetU⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
+  50‿(       {s𝕊e: s.Push { r‿f‿x: r.SetU⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
+  51‿(       {s𝕊e: s.Push { r‿f  : r.SetU⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
   # Namespaces
-  64‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i GetField  ⊑s.Pop 1 } }
-  66‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
+  64‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i GetField  ⊑s.Pop 1 } }
+  66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-Error← {𝕊: 
-  •Out "Error:"∾•CurrentError@
-  •Out "TODO show stack trace and stop recording"
-  abort↩1
-}
-
 # Evaluate a body
-RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
+RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
-    l←pos⊑¨loc
-
     op ← (Next@) ⊑ ops
     op ↩ Op next
-
-    stack Op env‿l
-    (¬abort)∧stack.cont  # Changes to 0 on return or abort
+    •Show env.vars
+    stack Op env
+    stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
   Step _while_ ⊢ 1
-  stack.rslt‿(pos-1)
+  stack.rslt
 }
 
-# Wrap namespace to vm compatable namespace 
 # Evaluate a program, given the compiler output
-{ file VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-  consts↩{ # wrap constants to have Field if namespace
-    𝕊 ns: 6≡•Type ns ? Field ⇐ {p𝕊i:Get⇐{𝕊:ns •ns.Get i⊑p.names}}
-  ; 𝕊 𝕩: 𝕩
-  }¨consts 
+{ env VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
 
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
-      file Push start⊑¨loc # TODO push bytecode
       env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {0‿0 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-  
-      {(∾⟜⟨start⊑¨loc⟩¨⟨"𝕩","𝕨"⟩) Rec¨1‿2⊏𝕩}⍟(1⌊≠) args # record 𝕨 𝕩
-      out‿end←RunBC bc‿start‿env‿loc
-      file Pop (start⊑⊑loc)‿(end⊑0⊑loc)
-      out
+      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+      RunBC bc‿start‿env
     }
   }¨ bodyInfo
 
@@ -266,5 +242,5 @@ RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment
     names⇐0⊑2⊑token
   }
   
-  (⊑blocks){𝔽} {program⇐program, vars⇐⟨⟩}
+  (⊑blocks){𝔽} {program⇐program}
 }
