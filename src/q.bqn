@@ -1,4 +1,4 @@
-s        ← •Import "s.bqn"
+s       ←    •Import "s.bqn"
 gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
@@ -18,25 +18,7 @@ Run⇐Import ⇐ {
 ; · 𝕊 𝕩 : import_cache.Has 𝕩 ? import_cache.Get 𝕩
 ; 𝕨 𝕊 𝕩 : 
     ⟨src, file, lines⟩←𝕨 ctx.Push 𝕩
-    # FIXME cleanup
-    Catch ← 𝕩⊸{ 𝕊:
-      ⟨loc, msg⟩← •CurrentError @
-      s‿e←loc↩⥊loc
-      ln←lines⊑˜⊑loc # line number
-      m←∨´lines⊸=¨lines⊏˜loc
-      m/↕≠src
-      l←1↓m/src
-      s+↕1+e-s
-      
-      •Out "Error: "∾msg
-      •Out 𝕨∾":"∾•Fmt ln
-      •Out l
-      •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
-      •Exit 1
-    }
-    #c ← (⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile)⎊Catch src
     c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile src
-
     r ← file VM c
     𝕩 import_cache.Set r
     ctx.Pop 1 
@@ -57,6 +39,10 @@ Show←{
   
   •Show 𝕩
 }
+
+
+# query modifiers
+# [condition] [string] •_f [values]
 
 # Lookup table
 systable← ∾<˘⋈˘⍉>⟨
@@ -92,5 +78,3 @@ Path←{•wdpath∾"/"∾𝕩}
 
 Run ⊑Path¨•args
 input← •FLines "/dev/fd/0"
-#•SHow¨input
-•Show s.db.s
