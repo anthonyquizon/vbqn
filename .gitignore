@@ -1,5 +1,6 @@
 _extern/
 _scratch*
+_archived/
 
 *.dSYM/
 replxx_history.txt

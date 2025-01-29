@@ -1,3 +1,0 @@
-#! /usr/bin/env bash
-export TIMEFORMAT='%3R'
-find . -name '*.bqn' | entr -rs "time (cat _fern.bqn | fern $1)"

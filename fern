@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-src="$(dirname "$( [ -L "$0" ] && readlink -f "$0" || echo "$0" )")" # set directory (symlink or nonsymlink)
-bqn $src/src/f.bqn $@
