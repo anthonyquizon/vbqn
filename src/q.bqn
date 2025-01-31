@@ -26,7 +26,7 @@ ctx ⇐ {
 
   Push ⇐ { args 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") Peek @
-    (fmap.Set⟜File⟜(f‿args))⍟(¬∘fmap.Has) f
+    {𝕩 fmap.Set File f‿args}⍟(¬∘fmap.Has) f
     s∾↩< { cwd⇐•file.Parent f }
     fmap.Get f
   }
