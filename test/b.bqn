@@ -1,4 +1,5 @@
 Bar⇐{
+  •Show •args
   q←𝕩+1 #?
 }
 
