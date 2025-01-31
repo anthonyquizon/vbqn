@@ -9,7 +9,6 @@
 
 lf←@+10
 
-# TODO if question mark
 # f:file, l:line, n:name a:assign 𝕊 v:value
 Print←{ 
   file‿line‿marks 𝕊 n‿a‿v: line⊑marks ?

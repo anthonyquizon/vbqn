@@ -1,6 +1,6 @@
 b←•Import "./b.bqn"
 Foo ←{
-  a←𝕩   #? this is a 
+  a←𝕩 ⋄ z ←8 #? this is a 
   a↩10  #?
 }
 Foo 2 
