@@ -66,15 +66,12 @@ ref ← {
       # Get field for reference 𝕨 from namespace, if possible
       F ← {⟨G⇐GetF⟩𝕊𝕩:(G𝕩).Get@ ; !Err"Cannot extract non-name from namespace"}
       {
-        0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
-                   arr ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
-        6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
+        𝕨𝕊𝕩: 0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
+                   (⟨𝕨⟩⊸∾¨arr) ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
+        𝕨𝕊𝕩:6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
         Err "Multiple targets but atomic value"
       }
     }
-    #SetN ⇐    {𝕨.SetN𝕩}_set_"←"
-    #SetU ⇐    {𝕨.SetU𝕩}_set_"↩"
-    #SetQ ⇐ ∨´ {𝕨.SetQ𝕩}_set_@
     SetN ⇐   {l‿r𝕊𝕩:l r.SetN𝕩}_set_"←"
     SetU ⇐   {l‿r𝕊𝕩:l r.SetU𝕩}_set_"↩"
     SetQ ⇐ ∨´{l‿r𝕊𝕩:l r.SetQ𝕩}_set_@
@@ -132,6 +129,7 @@ Namespace ← {𝕩.MakeNS@}
 # Read field 𝕨 from program 𝕩, where 𝕨 is the environment and index
 GetField ← { e‿i 𝕊 𝕩:
   "Key lookup in non-namespace" ! 6=•Type𝕩
+  •Show 𝕩.Field
   (e.program 𝕩.Field i).Get @
 }
 
@@ -165,7 +163,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
    8‿(       {s𝕊e‿·: 1 s.Ret Namespace e }˙)
   # Arrays
   11‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push           ⌽s.Pop i } }
-  12‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push ref.Array ⌽s.Pop i } }
+  12‿{i←𝕏@ ⋄ {s𝕊e‿c: s.Push ref.Array ⌽s.Pop i } }
   13‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push > ⌽s.Pop i } }
   14‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
@@ -215,8 +213,18 @@ RunBC ← { file‿lines‿marks 𝕊 bc‿pos‿env‿loc:  # bytecode, startin
   stack.rslt
 }
 
+# Wrap namespace to vm compatable namespace 
+AdaptConst ← { 
+  𝕊 ns: 6≡•Type ns ?
+    Field ⇐ {p𝕊i:
+      Get ⇐ { 𝕊: ns •ns.Get i⊑p.names }
+    }
+; 𝕊 𝕩: 𝕩
+}
+
 # Evaluate a program, given the compiler output
 { ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  consts↩AdaptConst¨consts
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
