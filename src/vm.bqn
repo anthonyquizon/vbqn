@@ -11,7 +11,8 @@ lf←@+10
 
 # f:file, l:line, n:name a:assign 𝕊 v:value
 Print←{ 
-  file‿line‿marks 𝕊 n‿a‿v: line⊑marks ?
+  file‿line‿marks 𝕊 n‿a‿v: line≡¯1 ? @
+; file‿line‿marks 𝕊 n‿a‿v: line⊑marks ?
     vf←•Fmt v
     nl←(100⊸≤)◶⟨"",lf⟩  ≠vf
     •Out ∾⟨•file.Name file,':',4↑(•Fmt line)∾':'⟩∾∾⟜' '¨⟨n, a, nl∾vf⟩
@@ -220,7 +221,7 @@ RunBC ← { file‿lines‿marks 𝕊 bc‿pos‿env‿loc:  # bytecode, startin
     # Called when the body is evaluated
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+      (⊢ {⟨⟨⟩,¯1,⟨⟩⟩ 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
       ctx RunBC bc‿start‿env‿loc
     }
   }¨ bodyInfo
