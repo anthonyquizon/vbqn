@@ -73,8 +73,6 @@ Run⇐Import ⇐ {
     r
 }
 
-Args ←{ 𝕊:
-  ⟨args⟩←ctx.Peek @
-  args
-}
-
+# === Main ===
+{ 𝕊: •Out "Missing input file" ⋄ •Exit 1 }⍟(0=≠) •args
+Run ⊑{•wdpath∾"/"∾𝕩}¨•args
