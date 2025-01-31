@@ -1,3 +1,28 @@
+
+#ansi←{
+  #e⇐@+27
+  #cyan⇐e∾"[36m"
+  #white⇐e∾"[0;37m"
+  #bold_white⇐e∾"[1;37m"
+  #reset⇐e∾"[0m"
+#}
+
+file←@
+lines←@
+marks←@
+line←@
+lf←@+10
+
+# TODO if question mark
+# f:file, l:line, n:name a:assign 𝕊 v:value
+_print←{ 
+  n a _Q v: line⊑marks ?
+    vf←•Fmt v
+    nl←(100⊸≤)◶⟨"",lf⟩  ≠vf
+    •Out ∾⟨file,':',4↑(•Fmt line)∾':'⟩∾∾⟜' '¨⟨n, a, nl∾vf⟩
+; @
+}
+
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -8,12 +33,15 @@
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 MakeVar ← { program 𝕊 name:
+  n←name⊑program.names
   v←@  # Value
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
     Get ↩ {𝕊:v}
-    (SetU ↩ {v↩𝕩}) 𝕩
+    n '←'_print 𝕩
+    (SetU ↩ { n '↩'_print 𝕩 ⋄ v↩𝕩})
+    v↩𝕩
   }
   SetQ ⇐ 0∘SetN
   GetC ⇐ {
@@ -173,13 +201,15 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 ⟩
 
 # Evaluate a body
-RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
-  Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
+RunBC ← { bc‿pos‿env‿loc:  # bytecode, starting position, environment, bytecode location
+  Next ← {𝕊: 
+    line↩(lines⊑˜⊑pos⊑¨loc)
+    (pos+↩1) ⊢ pos⊑bc 
+  }
   stack ← MakeStack ⟨⟩
   Step ← {𝕊:
     op ← (Next@) ⊑ ops
     op ↩ Op next
-    •Show env.vars
     stack Op env
     stack.cont  # Changes to 0 on return or abort
   }
@@ -189,14 +219,14 @@ RunBC ← { bc‿pos‿env:  # bytecode, starting position, environment
 }
 
 # Evaluate a program, given the compiler output
-{ env VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
-
+{ f‿l‿m VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+  file↩•file.Name f ⋄ lines↩l ⋄ marks↩m
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      RunBC bc‿start‿env
+      RunBC bc‿start‿env‿loc
     }
   }¨ bodyInfo
 

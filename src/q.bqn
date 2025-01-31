@@ -10,14 +10,15 @@ runtime⇐⟨
  ∘,○,⊸,⟜,⌾,⊘,◶,⎉,⚇,⍟,⎊,
 ⟩
 
-file_map  ←⟨⟩ •HashMap ⟨⟩
-import_map←⟨⟩ •HashMap ⟨⟩ #cached imported files
+fmap←⟨⟩ •HashMap ⟨⟩
+imap←⟨⟩ •HashMap ⟨⟩ #cached imported files
 
-Fmt←{ 
+File←{ 
+  src⇐lines⇐marks⇐@ 
   file‿args ⇐ 𝕩
-  src   ⇐ •file.Chars file
-  cols  ⇐ ∾+`¨1¨¨⊔+`src=lf
-  lines ⇐ 1++`src=lf 
+  src   ↩ •file.Chars file
+  lines ↩ 1++`src=lf 
+  marks ↩0∾∨´¨((≠src)↑"#?"⍷src)⊔˜+`src=lf
 }
 
 ctx ⇐ {
@@ -25,9 +26,9 @@ ctx ⇐ {
 
   Push ⇐ { args 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") Peek @
-    (file_map.Set⟜Fmt⟜(f‿args))⍟(¬∘file_map.Has) f
+    (fmap.Set⟜File⟜(f‿args))⍟(¬∘fmap.Has) f
     s∾↩< { cwd⇐•file.Parent f }
-    file_map.Get f
+    fmap.Get f
   }
 
   Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                 # Return but don't pop top value
@@ -36,51 +37,30 @@ ctx ⇐ {
 
 Run⇐Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
-; · 𝕊 𝕩 : import_map.Has 𝕩 ? import_map.Get 𝕩
+; · 𝕊 𝕩 : imap.Has 𝕩 ? imap.Get 𝕩
 ; 𝕨 𝕊 𝕩 : 
-    ⟨src, file, lines⟩←𝕨 ctx.Push 𝕩
-    •Show src=lf
-    #•Show src∊"#?"
-    # TODO parse comments - if parse failed 
-
+    ⟨src, file, lines, marks⟩←𝕨 ctx.Push 𝕩
     c ← ⟨runtime, { System 𝕩 }, ⟨⟩⟩⊸Compile src
-    # TODO return values from lines
-    r ← file VM c
-    𝕩 import_map.Set r
+    r ← file‿lines‿marks VM c
+    𝕩 imap.Set r
     ctx.Pop 1 
     r
 }
-
-Args ← { 𝕊:
-  ⟨args⟩←ctx.Peek @
-  args
-}
-
-FFI ← {
-  f←𝕨 •FFI 𝕩
-  { •SHow "record ffi" ⋄  𝔽 𝕩 }
-}
-
-Show←{
-  
-  •Show 𝕩
-}
-
 
 # query modifiers
 # [condition] [string] •_f [values]
 
 # Lookup table
 systable← ∾<˘⋈˘⍉>⟨
-     "args"‿Args
-     "while"‿•_while_
-     "hash"‿•Hash
-     "parsefloat"‿•ParseFloat
-     "ffi"‿FFI
-     "out"‿•Out
+    #"args"‿Args
+    "while"‿•_while_
+    "hash"‿•Hash
+    "parsefloat"‿•ParseFloat
+    "ffi"‿•FFI
+    "out"‿•Out
     "exit"‿•Exit
     "file"‿•file
-    "fmt" ‿•Fmt
+    "fmt" ‿•File
     "math"‿•math
     "ns"  ‿•ns
     "show"‿•Show
