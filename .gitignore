@@ -2,6 +2,7 @@ _extern/
 _scratch*
 _archived/
 _coding/
+_bqn/
 
 *.dSYM/
 replxx_history.txt
