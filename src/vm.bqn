@@ -1,24 +1,3 @@
-PP←•Show
-#ansi←{
-  #e⇐@+27
-  #cyan⇐e∾"[36m"
-  #white⇐e∾"[0;37m"
-  #bold_white⇐e∾"[1;37m"
-  #reset⇐e∾"[0m"
-#}
-
-lf←@+10
-
-# f:file, l:line, n:name a:assign 𝕊 v:value
-OnSet←{ 
-  file‿line‿marks 𝕊 n‿a‿v: line≡¯1 ? @
-; file‿line‿marks 𝕊 n‿a‿v: line⊑marks ?
-    vf←•Fmt v
-    nl←(100⊸≤)◶⟨"",lf⟩  ≠vf
-    •Out ∾⟨•file.Name file,':',4↑(•Fmt line)∾':'⟩∾∾⟜' '¨⟨n, a, nl∾vf⟩
-; @
-}
-
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -35,9 +14,7 @@ MakeVar ← { program 𝕊 name:
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
     Get ↩ {𝕊:v}
-    𝕨 OnSet n‿'←'‿𝕩
-    (SetU ↩ { v↩𝕩})
-    v↩𝕩
+    (SetU ↩ {v↩𝕩}) 𝕩
   }
   SetQ ⇐ 0∘SetN
   GetC ⇐ {
@@ -66,15 +43,15 @@ ref ← {
       # Get field for reference 𝕨 from namespace, if possible
       F ← {⟨G⇐GetF⟩𝕊𝕩:(G𝕩).Get@ ; !Err"Cannot extract non-name from namespace"}
       {
-        𝕨𝕊𝕩: 0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
-                   (⟨𝕨⟩⊸∾¨arr) ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
-        𝕨𝕊𝕩:6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
+        0=•Type𝕩 ? Err⍟al "Can't use alias in list destructuring"
+                   arr ≡○≢◶⟨Err∘"Target and value shapes don't match", S¨⟩ 𝕩 ;
+        6=•Type𝕩 ? (⊢ S F⟜𝕩)_c¨ arr ;
         Err "Multiple targets but atomic value"
       }
     }
-    SetN ⇐   {l‿r𝕊𝕩:l r.SetN𝕩}_set_"←"
-    SetU ⇐   {l‿r𝕊𝕩:l r.SetU𝕩}_set_"↩"
-    SetQ ⇐ ∨´{l‿r𝕊𝕩:l r.SetQ𝕩}_set_@
+    SetN ⇐    {𝕨.SetN𝕩}_set_"←"
+    SetU ⇐    {𝕨.SetU𝕩}_set_"↩"
+    SetQ ⇐ ∨´ {𝕨.SetQ𝕩}_set_@
     # Create a merged reference array based on this one
     Merge ⇐ {𝕊:
       Split ← {
@@ -154,64 +131,64 @@ MakeStack ← {
 # called on the stack s and environment e at evaluation time.
 ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   # Constants and drop
-   0‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push         i⊑e.program.consts } }
-   1‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e {𝕎𝕩}˜ i⊑e.program.blocks } }
-   6‿(       {s𝕊e‿·: s.Pop 1 }˙)
+   0‿{i←𝕏@ ⋄ {s𝕊e: s.Push         i⊑e.program.consts } }
+   1‿{i←𝕏@ ⋄ {s𝕊e: s.Push e {𝕎𝕩}˜ i⊑e.program.blocks } }
+   6‿(       {s𝕊e: s.Pop 1 }˙)
   # Returns
-   7‿(       {s𝕊e‿·: 0 s.Ret ⊑s.Pop 1 }˙)
-   8‿(       {s𝕊e‿·: 1 s.Ret Namespace e }˙)
+   7‿(       {s𝕊e: 0 s.Ret ⊑s.Pop 1 }˙)
+   8‿(       {s𝕊e: 1 s.Ret Namespace e }˙)
   # Arrays
-  11‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push           ⌽s.Pop i } }
-  12‿{i←𝕏@ ⋄ {s𝕊e‿c: s.Push ref.Array ⌽s.Pop i } }
-  13‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push > ⌽s.Pop i } }
-  14‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
+  11‿{i←𝕏@ ⋄ {s𝕊e: s.Push           ⌽s.Pop i } }
+  12‿{i←𝕏@ ⋄ {s𝕊e: s.Push ref.Array ⌽s.Pop i } }
+  13‿{i←𝕏@ ⋄ {s𝕊e: s.Push > ⌽s.Pop i } }
+  14‿{i←𝕏@ ⋄ {s𝕊e: s.Push {𝕩.Merge@} ref.Array ⌽s.Pop i } }
   # Application
-  16‿(       {s𝕊e‿·: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
-  17‿(       {s𝕊e‿·: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
-  20‿(       {s𝕊e‿·: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
-  21‿(       {s𝕊e‿·: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
-  26‿(       {s𝕊e‿·: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
-  27‿(       {s𝕊e‿·: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
+  16‿(       {s𝕊e: s.Push {   f‿x:   F x }   s.Pop 2 }˙)
+  17‿(       {s𝕊e: s.Push { w‿f‿x: w F x }   s.Pop 3 }˙)
+  20‿(       {s𝕊e: s.Push {   g‿h:   G H }   s.Pop 2 }˙)
+  21‿(       {s𝕊e: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
+  26‿(       {s𝕊e: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
+  27‿(       {s𝕊e: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
   # Application with Nothing
-  18‿(       {s𝕊e‿·: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
-  19‿(       {s𝕊e‿·: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
-  23‿(       {s𝕊e‿·: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
-  22‿(       {s𝕊e‿·: "Left argument required" ! nothing≢s.Peek@ }˙)
+  18‿(       {s𝕊e: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
+  19‿(       {s𝕊e: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
+  23‿(       {s𝕊e: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
+  22‿(       {s𝕊e: "Left argument required" ! nothing≢s.Peek@ }˙)
   # Variables
-  32‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push (V e).Get @ } }
-  34‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push (V e).GetC@ } }
-  33‿{v←VO𝕩⋄ {s𝕊e‿·: s.Push  V e        } }
+  32‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).Get @ } }
+  34‿{v←VO𝕩⋄ {s𝕊e: s.Push (V e).GetC@ } }
+  33‿{v←VO𝕩⋄ {s𝕊e: s.Push  V e        } }
   # Headers
-  42‿(       {s𝕊e‿·: {0:s.Skip@; 1:@; 𝕊:!"Predicate value must be 0 or 1"} ⊑s.Pop 1 }˙)
-  43‿(       {s𝕊e‿·: s.Push ref.Matcher ⊑s.Pop 1 }˙)
-  44‿(       {s𝕊e‿·: s.Push ref.not }˙)
+  42‿(       {s𝕊e: {0:s.Skip@; 1:@; 𝕊:!"Predicate value must be 0 or 1"} ⊑s.Pop 1 }˙)
+  43‿(       {s𝕊e: s.Push ref.Matcher ⊑s.Pop 1 }˙)
+  44‿(       {s𝕊e: s.Push ref.not }˙)
   # Assignment
-  47‿(       {s𝕊e‿l: s.Skip⍟⊢{r‿  v: l r.SetQ   v             } s.Pop 2 }˙)  # r:
-  48‿(       {s𝕊e‿l: s.Push  {r‿  v: (l⊸r.SetN)⊸⊢ v           } s.Pop 2 }˙)  # r  ←v
-  49‿(       {s𝕊e‿l: s.Push  {r‿  v: (l⊸r.SetU)⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
-  50‿(       {s𝕊e‿l: s.Push  {r‿f‿x: (l⊸r.SetU)⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
-  51‿(       {s𝕊e‿l: s.Push  {r‿f  : (l⊸r.SetU)⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
+  47‿(       {s𝕊e: s.Skip⍟⊢{r‿  v: r.SetQ   v           } s.Pop 2 }˙)  # r:
+  48‿(       {s𝕊e: s.Push { r‿  v: r.SetN⊸⊢ v           } s.Pop 2 }˙)  # r  ←v
+  49‿(       {s𝕊e: s.Push { r‿  v: r.SetU⊸⊢ v           } s.Pop 2 }˙)  # r  ↩v
+  50‿(       {s𝕊e: s.Push { r‿f‿x: r.SetU⊸⊢ (r.Get@)F x } s.Pop 3 }˙)  # r F↩x
+  51‿(       {s𝕊e: s.Push { r‿f  : r.SetU⊸⊢ F r.Get@    } s.Pop 2 }˙)  # r F↩
   # Namespaces
-  64‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i GetField  ⊑s.Pop 1 } }
-  66‿{i←𝕏@ ⋄ {s𝕊e‿·: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
+  64‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i GetField  ⊑s.Pop 1 } }
+  66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
 # Evaluate a body
-RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment, bytecode locations
-  ⟨query, file, lines⟩←ctx
+RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
+  Line ← {𝕊: ctx.lines⊑˜⊑pos⊑¨loc }
   stack ← MakeStack ⟨⟩
-  lst←lines⊑˜⊑pos⊑¨loc
+  lst←Line@
   Step ← {𝕊:
-    ln ← lines⊑˜⊑pos⊑¨loc
-
+    ln ← Line@
     op ← (Next@) ⊑ ops
     op ↩ Op next
-    stack Op env‿⟨file,ln⟩
+    stack Op env
+
     { 𝕊:
       n←{ 𝕩.n }¨env.vars # TODO parent vars
       v←{ 𝕩.v }¨env.vars # TODO parent vars
-      q←query/˜{(1⊑𝕩.loc)≡lst}¨query
+      q←ctx.query/˜{(1⊑𝕩.loc)≡lst}¨ctx.query
       c←{v 𝕩.Run n}¨q
     }⍟((lst≠ln)∨¬stack.cont) @
 
@@ -235,12 +212,12 @@ AdaptConst ← {
 # Evaluate a program, given the compiler output
 { ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
-  # TODO get line breaks
+
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
-      (⊢ {⟨⟨⟩,¯1,⟨⟩⟩ 𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
+      (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
       ctx RunBC bc‿start‿env‿loc
     }
   }¨ bodyInfo
