@@ -3,6 +3,8 @@ _scratch*
 _archived/
 _coding/
 _bqn/
+_test.bqn
+_p.bqn
 
 *.dSYM/
 replxx_history.txt

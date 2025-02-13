@@ -1,4 +1,4 @@
-
+PP←•Show
 #ansi←{
   #e⇐@+27
   #cyan⇐e∾"[36m"
@@ -10,7 +10,7 @@
 lf←@+10
 
 # f:file, l:line, n:name a:assign 𝕊 v:value
-Print←{ 
+OnSet←{ 
   file‿line‿marks 𝕊 n‿a‿v: line≡¯1 ? @
 ; file‿line‿marks 𝕊 n‿a‿v: line⊑marks ?
     vf←•Fmt v
@@ -29,14 +29,14 @@ Print←{
 # - SetQ: Set value and return 0 if possible, and return 1 if not
 # - GetF: Get corresponding field from namespace 𝕩
 MakeVar ← { program 𝕊 name:
-  n←name⊑program.names
-  v←@  # Value
+  n⇐name⊑program.names
+  v⇐@  # Value
   Get  ⇐ !∘"Runtime: Variable referenced before definition"
   SetU ⇐ !∘"↩: Variable modified before definition"
   SetN ⇐ {
     Get ↩ {𝕊:v}
-    𝕨 Print n‿'←'‿𝕩
-    (SetU ↩ { 𝕨 Print n‿'↩'‿𝕩 ⋄ v↩𝕩})
+    𝕨 OnSet n‿'←'‿𝕩
+    (SetU ↩ { v↩𝕩})
     v↩𝕩
   }
   SetQ ⇐ 0∘SetN
@@ -129,7 +129,6 @@ Namespace ← {𝕩.MakeNS@}
 # Read field 𝕨 from program 𝕩, where 𝕨 is the environment and index
 GetField ← { e‿i 𝕊 𝕩:
   "Key lookup in non-namespace" ! 6=•Type𝕩
-  •Show 𝕩.Field
   (e.program 𝕩.Field i).Get @
 }
 
@@ -173,7 +172,7 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   21‿(       {s𝕊e‿·: s.Push { f‿g‿h: F G H }   s.Pop 3 }˙)
   26‿(       {s𝕊e‿·: s.Push { f‿m  : F _m    } s.Pop 2 }˙)
   27‿(       {s𝕊e‿·: s.Push { f‿m‿g: F _m_ g } s.Pop 3 }˙)
-  # Application w‿·ith Nothing
+  # Application with Nothing
   18‿(       {s𝕊e‿·: s.Push {   f‿x:                     F⍟(nothing⊸≢) x } s.Pop 2 }˙) # Like 16
   19‿(       {s𝕊e‿·: s.Push { w‿f‿x: (nothing≢w˙)◶⟨F,w˙⊸F⟩⍟(nothing⊸≢) x } s.Pop 3 }˙) # Like 17
   23‿(       {s𝕊e‿·: s.Push { f‿g‿h: {f≡nothing?G H;F G H}               } s.Pop 3 }˙) # Like 21
@@ -198,14 +197,25 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 ⟩
 
 # Evaluate a body
-RunBC ← { file‿lines‿marks 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment, bytecode locations
+RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment, bytecode locations
+  ⟨query, file, lines⟩←ctx
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
   stack ← MakeStack ⟨⟩
+  lst←lines⊑˜⊑pos⊑¨loc
   Step ← {𝕊:
     ln ← lines⊑˜⊑pos⊑¨loc
+
     op ← (Next@) ⊑ ops
     op ↩ Op next
-    stack Op env‿⟨file,ln,marks⟩
+    stack Op env‿⟨file,ln⟩
+    { 𝕊:
+      n←{ 𝕩.n }¨env.vars # TODO parent vars
+      v←{ 𝕩.v }¨env.vars # TODO parent vars
+      q←query/˜{(1⊑𝕩.loc)≡lst}¨query
+      c←{v 𝕩.Run n}¨q
+    }⍟((lst≠ln)∨¬stack.cont) @
+
+    lst↩ln
     stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
@@ -225,6 +235,7 @@ AdaptConst ← {
 # Evaluate a program, given the compiler output
 { ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
+  # TODO get line breaks
   bodies ← {start‿vars‿names‿export:
     # Called when the body is evaluated
     {parent 𝕊 args:
