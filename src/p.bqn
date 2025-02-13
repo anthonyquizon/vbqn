@@ -3,12 +3,9 @@ gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
 
-
 ansi←{
   e⇐@+27
-  cyan⇐e∾"[36m"
-  white⇐e∾"[0;37m"
-  bold_white⇐e∾"[1;37m"
+  bold_cyan⇐e∾"[1;36m"
   reset⇐e∾"[0m"
 }
 
@@ -25,7 +22,9 @@ pmap←⟨⟩ •HashMap ⟨⟩ #cached queries match to filenames
 
 Info←{ 
   k←pmap.Keys @
-  k↩⊑k/˜∨´¨⍷⟜𝕩¨k # take first matching files
+
+  z←𝕩/˜¬".bqn"⊸≡¨¯4↑¨𝕩
+  k↩⊑k/˜∨´¨⍷⟜z¨k # take first matching files
 
   file  ⇐ 𝕩
   query ⇐ pmap.Get k
@@ -56,6 +55,7 @@ file⇐{
 }
 
 syslist←⟨
+    "p"‿•Show # TODO show file and line number
     "while"‿•_while_
     "hash"‿•Hash
     "parsefloat"‿•ParseFloat
@@ -97,17 +97,16 @@ Run⇐Import ⇐ {
 
 Parse←{ 𝕊 p:
   p↩{𝕩/˜0=+`𝕩='#'}¨p # remove comments
+  p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p # remove empty lines
   p↩p/˜(0<≠)¨p
   m←{1≤+`𝕩=' '}¨p
   loc←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
   file←⊑¨loc
-  z←¬".bqn"⊸≡¨¯4↑¨file
-  file↩ (∾⟜".bqn"¨)⌾(z⊸/) file 
   g←⊐file
   q← loc { 𝕨 𝕊 ⟨p,src⟩: 
     loc⇐𝕨
     Run⇐{ 
-      •Out ansi.bold_white∾p∾ansi.reset
+      •Out ansi.bold_cyan∾p∾ansi.reset
       •Show ⟨"", "", 𝕨⟩ •BQN ∾⟨"⟨",1↓∾','⊸∾¨𝕩,"⟩← •args",lf,src⟩
     } 
   }¨p⋈¨(m/¨p)
@@ -116,5 +115,5 @@ Parse←{ 𝕊 p:
 
 # === Main ===
 { 𝕊: •Out "Missing input file" ⋄ •Exit 1 }⍟(0=≠) •args
-Parse•file.Lines •wdpath∾"/_p.bqn"
+Parse •file.Lines •wdpath∾"/.p.bqn"
 Run •wdpath∾"/"∾⊑•args

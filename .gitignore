@@ -4,7 +4,7 @@ _archived/
 _coding/
 _bqn/
 _test.bqn
-_p.bqn
+.p.bqn
 
 *.dSYM/
 replxx_history.txt
