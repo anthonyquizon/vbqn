@@ -8,6 +8,8 @@ ansi←{
   reset⇐e∾"[0m"
 }
 
+pfile←".p.bqn"
+
 lf←@+10
 rtm⇐⟨
  +,-,×,÷,⋆,√,⌊,⌈,|,¬,∧,∨,<,>,≠,=,≤,≥,≡,≢,⊣,⊢,⥊,∾,≍,⋈,↑,↓,↕,«,»,⌽,⍉,/,⍋,⍒,⊏,⊑,⊐,⊒,∊,⍷,⊔,!,
@@ -24,6 +26,8 @@ Info←{
 
   z←𝕩/˜¬".bqn"⊸≡¨¯4↑¨𝕩 
   k↩k/˜∨´¨⍷⟜z¨k # take first matching files
+
+  ("Missing file " ∾ 𝕩) ! •file.Exists 𝕩
 
   file  ⇐ 𝕩
   query ⇐ (0⊸≠≠)◶⟨⟩‿(pmap.Get∘⊑) k
@@ -94,28 +98,33 @@ Run⇐Import ⇐ {
     r
 }
 
-Parse←{ 𝕊 p:
-  p↩{𝕩/˜0=+`𝕩='#'}¨p # remove comments
-  p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p # remove empty lines
-  p↩p/˜(0<≠)¨p
-  m←{1≤+`𝕩=' '}¨p
-  loc←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
-  file←⊑¨loc
-  g←⊐file
-  q← loc { 𝕨 𝕊 ⟨p,src⟩: 
-    bkt←1⊑𝕨
-    Run⇐{ 
-      ⟨ln⟩ 𝕊 n‿v: bkt≡ln ?
-        # TODO match iteration
-        •Out ansi.bold_cyan∾p∾ansi.reset
-        •Show ⟨"", "", v⟩ •BQN ∾⟨"⟨",1↓∾','⊸∾¨n,"⟩← •args",lf,src⟩
-    ; @
-    } 
-  }¨p⋈¨(m/¨p)
-  (⊑¨g⊔file) pmap.Set¨g⊔q
+PBQNFile←{ 
+  𝕊 𝕩 : •file.Exists 𝕩 ? 
+    p←•file.Lines 𝕩 # TODO try read
+    p↩{𝕩/˜0=+`𝕩='#'}¨p # remove comments
+    p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p # remove empty lines
+    p↩p/˜(0<≠)¨p
+    m←{1≤+`𝕩=' '}¨p
+    loc←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
+    file←⊑¨loc
+    g←⊐file
+    q← loc { 𝕨 𝕊 ⟨p,src⟩: 
+      bkt←1⊑𝕨
+      Run⇐{ 
+        ⟨ln⟩ 𝕊 n‿v: bkt≡ln ?
+          •Out ansi.bold_cyan∾p∾ansi.reset
+          •Show ⟨"", "", v⟩ •BQN ∾⟨"⟨",1↓∾','⊸∾¨n,"⟩← •args",lf,src⟩
+      ; @
+      } 
+    }¨p⋈¨(m/¨p)
+    (⊑¨g⊔file) pmap.Set¨g⊔q
+; 𝕊 𝕩 : •Out "Missing pbqn file " ∾ 𝕩
 }
 
 # === Main ===
-{ 𝕊: •Out "Missing input file" ⋄ •Exit 1 }⍟(0=≠) •args
-Parse •file.Lines •wdpath∾"/.p.bqn"
-Run •wdpath∾"/"∾⊑•args
+{
+  f←(¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args ⋄ "Missing input file" ! 1≥≠f
+  p←(0⊸<≠)◶pfile‿⊑  (»"-p"⊸≡¨)⊸/•args
+  PBQNFile •wdpath∾'/'∾p
+  Run •wdpath∾"/"∾⊑f
+}
