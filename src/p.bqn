@@ -1,4 +1,3 @@
-PP←•Show 
 gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
@@ -10,7 +9,7 @@ ansi←{
 }
 
 lf←@+10
-runtime⇐⟨
+rtm⇐⟨
  +,-,×,÷,⋆,√,⌊,⌈,|,¬,∧,∨,<,>,≠,=,≤,≥,≡,≢,⊣,⊢,⥊,∾,≍,⋈,↑,↓,↕,«,»,⌽,⍉,/,⍋,⍒,⊏,⊑,⊐,⊒,∊,⍷,⊔,!,
  ˙,˜,˘,¨,⌜,⁼,´,˝,`,
  ∘,○,⊸,⟜,⌾,⊘,◶,⎉,⚇,⍟,⎊,
@@ -23,11 +22,11 @@ pmap←⟨⟩ •HashMap ⟨⟩ #cached queries match to filenames
 Info←{ 
   k←pmap.Keys @
 
-  z←𝕩/˜¬".bqn"⊸≡¨¯4↑¨𝕩
-  k↩⊑k/˜∨´¨⍷⟜z¨k # take first matching files
+  z←𝕩/˜¬".bqn"⊸≡¨¯4↑¨𝕩 
+  k↩k/˜∨´¨⍷⟜z¨k # take first matching files
 
   file  ⇐ 𝕩
-  query ⇐ pmap.Get k
+  query ⇐ (0⊸≠≠)◶⟨⟩‿(pmap.Get∘⊑) k
   src   ⇐ •file.Chars file
   lines ⇐ 1++`src=lf 
 }
@@ -87,7 +86,7 @@ Run⇐Import ⇐ {
 ; · 𝕊 𝕩 : imap.Has 𝕩 ? imap.Get 𝕩
 ; args 𝕊 𝕩 : 
     info←ctx.Push 𝕩
-    c ← ⟨runtime, System args, ⟨⟩⟩⊸Compile info.src
+    c ← ⟨rtm, System args, ⟨⟩⟩⊸Compile info.src
     r ← info VM c
 
     𝕩 imap.Set r
@@ -104,10 +103,13 @@ Parse←{ 𝕊 p:
   file←⊑¨loc
   g←⊐file
   q← loc { 𝕨 𝕊 ⟨p,src⟩: 
-    loc⇐𝕨
+    bkt←1⊑𝕨
     Run⇐{ 
-      •Out ansi.bold_cyan∾p∾ansi.reset
-      •Show ⟨"", "", 𝕨⟩ •BQN ∾⟨"⟨",1↓∾','⊸∾¨𝕩,"⟩← •args",lf,src⟩
+      ⟨ln⟩ 𝕊 n‿v: bkt≡ln ?
+        # TODO match iteration
+        •Out ansi.bold_cyan∾p∾ansi.reset
+        •Show ⟨"", "", v⟩ •BQN ∾⟨"⟨",1↓∾','⊸∾¨n,"⟩← •args",lf,src⟩
+    ; @
     } 
   }¨p⋈¨(m/¨p)
   (⊑¨g⊔file) pmap.Set¨g⊔q

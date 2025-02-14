@@ -188,8 +188,7 @@ RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, envir
     { 𝕊:
       n←{ 𝕩.n }¨env.vars # TODO parent vars
       v←{ 𝕩.v }¨env.vars # TODO parent vars
-      q←ctx.query/˜{(1⊑𝕩.loc)≡lst}¨ctx.query
-      c←{v 𝕩.Run n}¨q
+      {⟨ln⟩ 𝕩.Run n‿v}¨ctx.query
     }⍟((lst≠ln)∨¬stack.cont) @
 
     lst↩ln
