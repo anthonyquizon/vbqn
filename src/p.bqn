@@ -90,7 +90,13 @@ Run⇐Import ⇐ {
 ; · 𝕊 𝕩 : imap.Has 𝕩 ? imap.Get 𝕩
 ; args 𝕊 𝕩 : 
     info←ctx.Push 𝕩
-    c ← ⟨rtm, System args, ⟨⟩⟩⊸Compile info.src
+
+    CCatch←{ 𝕊:
+      •Show •CurrentError@
+      •Exit 1
+    }
+
+    c ← (⟨rtm, System args, ⟨⟩⟩⊸Compile)⎊CCatch info.src
     r ← info VM c
 
     𝕩 imap.Set r
@@ -100,9 +106,9 @@ Run⇐Import ⇐ {
 
 PBQNFile←{ 
   𝕊 𝕩 : •file.Exists 𝕩 ? 
-    p←•file.Lines 𝕩 # TODO try read
-    p↩{𝕩/˜0=+`𝕩='#'}¨p # remove comments
-    p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p # remove empty lines
+    p←•file.Lines 𝕩
+    p↩{𝕩/˜0=+`𝕩='#'}¨p        # remove comments
+    p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p    # remove empty lines
     p↩p/˜(0<≠)¨p
     m←{1≤+`𝕩=' '}¨p
     loc←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
