@@ -85,18 +85,28 @@ System ←{ 𝕊 args:
   { 𝕨⊸FindSys⊏𝕩˙ }´∾<˘⋈˘⍉>syslist∾⟨ "import"‿Import, "args"‿𝕩 ⟩
 }
 
+
+# https://github.com/anthonyquizon/pbqn/blob/cf82aca079932ef9194ad7c198af714bc912a6a0/src/p.bqn#L21
+CmpCatch←{ info 𝕊 src:
+  ⟨lines,file⟩←info
+  ⟨loc,msg⟩←•CurrentError@
+  s‿e←loc↩⥊loc
+  ln←lines⊑˜⊑loc
+  m←∨´lines⊸=¨lines⊏˜loc
+  •Out "Error: "∾msg
+  •Out file∾":"∾•Fmt ln
+  •Out 1↓m/src
+  •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
+  •Exit 1
+}
+
 Run⇐Import ⇐ {
     𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
 ; · 𝕊 𝕩 : imap.Has 𝕩 ? imap.Get 𝕩
 ; args 𝕊 𝕩 : 
     info←ctx.Push 𝕩
 
-    CCatch←{ 𝕊:
-      •Show •CurrentError@
-      •Exit 1
-    }
-
-    c ← (⟨rtm, System args, ⟨⟩⟩⊸Compile)⎊CCatch info.src
+    c ← (⟨rtm, System args, ⟨⟩⟩⊸Compile)⎊(info⊸CmpCatch) info.src
     r ← info VM c
 
     𝕩 imap.Set r

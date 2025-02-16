@@ -185,6 +185,8 @@ RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, envir
     op ↩ Op next
     stack Op env
 
+    # TODO catch runtime errors
+
     { 𝕊:
       n←{ 𝕩.n }¨env.vars # TODO parent vars
       v←{ 𝕩.v }¨env.vars # TODO parent vars
