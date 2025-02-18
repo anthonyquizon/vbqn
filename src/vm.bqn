@@ -176,8 +176,8 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 EnvVars←{
     𝕊 𝕩: (⟨⟩ •Hash ⟨⟩) 𝕊 𝕩 
 ; h 𝕊 𝕩: 𝕩 •ns.Has "parent" ?
-    n←{ 𝕩.n }¨env.vars 
-    v←{ 𝕩.v }¨env.vars
+    n←{ 𝕩.n }¨𝕩.vars 
+    v←{ 𝕩.v }¨𝕩.vars
     n { ¬h.Has 𝕨 ? 𝕨 h.Set 𝕩 }¨ v
     𝕩.parent EnvVars h
 ; h 𝕊 ·: h

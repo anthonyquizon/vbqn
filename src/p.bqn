@@ -135,8 +135,15 @@ PBQNFile←{
 ; 𝕊 𝕩 : •Out "Missing pbqn file " ∾ 𝕩
 }
 
+usage←∾∾⟜lf¨⟨
+  "Usage: pbqn [options] [file.bqn [arguments]]"
+  "Options:"
+  "  -p file   query file"
+⟩
+
 # === Main ===
 {
+  {𝕊: •Out usage ⋄ •Exit 0}⍟(0⊸=) ≠•args 
   f←(¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args ⋄ "Missing input file" ! 1≥≠f
   p←(0⊸<≠)◶pfile‿⊑  (»"-p"⊸≡¨)⊸/•args
   PBQNFile •wdpath∾'/'∾p
