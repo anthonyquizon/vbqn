@@ -174,12 +174,13 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
 ⟩
 
 EnvVars←{
-    𝕊 𝕩: (⟨⟩ •Hash ⟨⟩) 𝕊 𝕩 
+    𝕊 𝕩: (⟨⟩ •HashMap ⟨⟩) 𝕊 𝕩 
 ; h 𝕊 𝕩: 𝕩 •ns.Has "parent" ?
     n←{ 𝕩.n }¨𝕩.vars 
     v←{ 𝕩.v }¨𝕩.vars
-    n { ¬h.Has 𝕨 ? 𝕨 h.Set 𝕩 }¨ v
-    𝕩.parent EnvVars h
+    n { 𝕨 { 𝕨 h.Set 𝕩 }⍟(¬∘h.Has⊢) 𝕩 }¨ v
+    h EnvVars 𝕩.parent
+    h
 ; h 𝕊 ·: h
 }
 
@@ -199,7 +200,7 @@ RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, envir
 
     { 𝕊:
       h←EnvVars env
-      ⟨h.Keys@, h.Vals@⟩⊸{⟨ln⟩ 𝕩.Run 𝕨}¨ctx.query
+      ⟨h.Keys@, h.Values@⟩⊸{⟨ln⟩ 𝕩.Run 𝕨}¨ctx.query
     }⍟((lst≠ln)∨¬stack.cont) @
 
     lst↩ln
