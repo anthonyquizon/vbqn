@@ -173,6 +173,16 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
+EnvVars←{
+    𝕊 𝕩: (⟨⟩ •Hash ⟨⟩) 𝕊 𝕩 
+; h 𝕊 𝕩: 𝕩 •ns.Has "parent" ?
+    n←{ 𝕩.n }¨env.vars 
+    v←{ 𝕩.v }¨env.vars
+    n { ¬h.Has 𝕨 ? 𝕨 h.Set 𝕩 }¨ v
+    𝕩.parent EnvVars h
+; h 𝕊 ·: h
+}
+
 # Evaluate a body
 RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
@@ -185,12 +195,11 @@ RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, envir
     op ↩ Op next
     stack Op env
 
-    # TODO catch runtime errors
+    # TODO catch runtime errors https://github.com/anthonyquizon/pbqn/blob/ebc622dd535b3cdb41e2a3257907a519c95657d8/src/vm.bqn
 
     { 𝕊:
-      n←{ 𝕩.n }¨env.vars # TODO parent vars
-      v←{ 𝕩.v }¨env.vars # TODO parent vars
-      {⟨ln⟩ 𝕩.Run n‿v}¨ctx.query
+      h←EnvVars env
+      ⟨h.Keys@, h.Vals@⟩⊸{⟨ln⟩ 𝕩.Run 𝕨}¨ctx.query
     }⍟((lst≠ln)∨¬stack.cont) @
 
     lst↩ln

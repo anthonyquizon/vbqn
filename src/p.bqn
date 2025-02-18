@@ -85,8 +85,6 @@ System ←{ 𝕊 args:
   { 𝕨⊸FindSys⊏𝕩˙ }´∾<˘⋈˘⍉>syslist∾⟨ "import"‿Import, "args"‿𝕩 ⟩
 }
 
-
-# https://github.com/anthonyquizon/pbqn/blob/cf82aca079932ef9194ad7c198af714bc912a6a0/src/p.bqn#L21
 CmpCatch←{ info 𝕊 src:
   ⟨lines,file⟩←info
   ⟨loc,msg⟩←•CurrentError@
