@@ -1,3 +1,5 @@
+ptrace ← 0 #print current trace 
+
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -173,6 +175,12 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
+# TODO opcode for application
+trace_ops←⟨
+  16,17,20,21,26,27,   # Application
+  18,19,23,22 # Application with Nothing
+⟩
+
 EnvVars←{
     𝕊 𝕩: (⟨⟩ •HashMap ⟨⟩) 𝕊 𝕩 
 ; h 𝕊 𝕩: 𝕩 •ns.Has "parent" ?
@@ -187,24 +195,28 @@ EnvVars←{
 # Evaluate a body
 RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
-  Line ← {𝕊: ctx.lines⊑˜⊑pos⊑¨loc }
+  Line ← {𝕊: ctx.ln⊑˜⊑pos⊑¨loc }
   stack ← MakeStack ⟨⟩
   lst←Line@
   Step ← {𝕊:
     ln ← Line@
-    op ← (Next@) ⊑ ops
+    op ← (i←Next@) ⊑ ops
     op ↩ Op next
-    stack Op env
 
-    # TODO catch runtime errors https://github.com/anthonyquizon/pbqn/blob/ebc622dd535b3cdb41e2a3257907a519c95657d8/src/vm.bqn
+    stack Op⎊{𝕊: •Out "Error: " ∾ •CurrentError@ ⋄ ptrace↩1 } env
 
     { 𝕊:
-      h←EnvVars env
-      ⟨h.Keys@, h.Values@⟩⊸{⟨ln⟩ 𝕩.Run 𝕨}¨ctx.query
-    }⍟((lst≠ln)∨¬stack.cont) @
+      •Out ∾⟨ctx.file,':',•Fmt ln⟩
+      •Out (ln-1)⊑ctx.lines
+      # TODO line columns
+    }⍟(1⊸≡) ptrace∧∨´i⍷trace_ops 
+
+    {𝕊: h←EnvVars env 
+       ⟨h.Keys@, h.Values@⟩⊸{⟨ln⟩ 𝕩.Run 𝕨 }¨ctx.query
+    }⍟(1⊸≡) ((lst≠ln)∨¬stack.cont) 
 
     lst↩ln
-    stack.cont  # Changes to 0 on return or abort
+    stack.cont∨¬ptrace  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
   Step _while_ ⊢ 1

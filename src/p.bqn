@@ -32,7 +32,9 @@ Info←{
   file  ⇐ 𝕩
   query ⇐ (0⊸≠≠)◶⟨⟩‿(pmap.Get∘⊑) k
   src   ⇐ •file.Chars file
-  lines ⇐ 1++`src=lf 
+  lines ⇐ •file.Lines file
+  ln    ⇐ 1++`src=lf  # line numbers #TODO remove line 1 offset
+  col   ⇐ ∾(↕≠)¨lines # column numbers
 }
 
 ctx ⇐ {
