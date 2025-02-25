@@ -3,4 +3,4 @@ Foo←{
   b←𝕩
 }
 
-Foo 3
+#Foo 3

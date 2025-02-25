@@ -11,11 +11,6 @@ ansi←{
 pfile←".p.bqn"
 
 lf←@+10
-rtm⇐⟨
- +,-,×,÷,⋆,√,⌊,⌈,|,¬,∧,∨,<,>,≠,=,≤,≥,≡,≢,⊣,⊢,⥊,∾,≍,⋈,↑,↓,↕,«,»,⌽,⍉,/,⍋,⍒,⊏,⊑,⊐,⊒,∊,⍷,⊔,!,
- ˙,˜,˘,¨,⌜,⁼,´,˝,`,
- ∘,○,⊸,⟜,⌾,⊘,◶,⎉,⚇,⍟,⎊,
-⟩
 
 fmap←⟨⟩ •HashMap ⟨⟩
 imap←⟨⟩ •HashMap ⟨⟩ #cached imported files
@@ -49,6 +44,20 @@ ctx ⇐ {
 
   Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                 # Return but don't pop top value
   Pop  ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s}             # Pop 𝕩 values; return as list
+}
+
+# Debug stack: keep track of calls
+dbg ← {
+  s ← ⟨⟩                          # Stack (a list)
+  Push  ⇐ {
+    •SHow ctx.Peek@
+    # ctx get file and linenumber
+    s∾↩<𝕩
+  }                 # Push a value
+  Pop   ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
+  Print ⇐ { 𝕊: 
+    •Out "Error: " ∾ •CurrentError@
+  }
 }
 
 file⇐{
@@ -106,8 +115,8 @@ Run⇐Import ⇐ {
 ; args 𝕊 𝕩 : 
     info←ctx.Push 𝕩
 
-    c ← (⟨rtm, System args, ⟨⟩⟩⊸Compile)⎊(info⊸CmpCatch) info.src
-    r ← info VM c
+    c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊(info⊸CmpCatch) info.src
+    r ← info‿dbg VM c
 
     𝕩 imap.Set r
     ctx.Pop 1 
@@ -127,9 +136,12 @@ PBQNFile←{
     q← loc { 𝕨 𝕊 ⟨p,src⟩: 
       bkt←1⊑𝕨
       Run⇐{ 
-        ⟨ln⟩ 𝕊 n‿v: bkt≡ln ?
+        h 𝕊 ln: bkt≡ln ?
+          #h.Keys@, h.Values@
           •Out ansi.bold_cyan∾p∾ansi.reset
-          •Show ⟨"", "", v⟩ •BQN ∾⟨"⟨",1↓∾','⊸∾¨n,"⟩← •args",lf,src⟩
+          #bqn← •ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩}
+          #•Show BQN "•args"
+          #•Show  BQN ∾⟨"⟨",1↓∾','⊸∾¨n,"⟩← •args",lf,src⟩
       ; @
       } 
     }¨p⋈¨(m/¨p)

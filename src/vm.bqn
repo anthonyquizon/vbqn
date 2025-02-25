@@ -1,5 +1,3 @@
-ptrace ← 0 #print current trace 
-
 # Create a variable slot.
 # A slot also functions as a variable reference, one kind of reference.
 # References support some of the following fields:
@@ -193,33 +191,27 @@ EnvVars←{
 }
 
 # Evaluate a body
-RunBC ← { ctx 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment
+RunBC ← { info‿dbg 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
-  Line ← {𝕊: ctx.ln⊑˜⊑pos⊑¨loc }
+  Line ← {𝕊: info.ln⊑˜⊑pos⊑¨loc }
   stack ← MakeStack ⟨⟩
   lst←Line@
+  
+  dbg.Push ⟨⟩
   Step ← {𝕊:
     ln ← Line@
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
 
-    stack Op⎊{𝕊: •Out "Error: " ∾ •CurrentError@ ⋄ ptrace↩1 } env
-
-    { 𝕊:
-      •Out ∾⟨ctx.file,':',•Fmt ln⟩
-      •Out (ln-1)⊑ctx.lines
-      # TODO line columns
-    }⍟(1⊸≡) ptrace∧∨´i⍷trace_ops 
-
-    {𝕊: h←EnvVars env 
-       ⟨h.Keys@, h.Values@⟩⊸{⟨ln⟩ 𝕩.Run 𝕨 }¨ctx.query
-    }⍟(1⊸≡) ((lst≠ln)∨¬stack.cont) 
+    stack Op⎊{𝕊: dbg.Print @ ⋄ •Exit 1} env
+    {𝕊: (EnvVars env)⊸{𝕨 𝕩.Run ln}¨info.query}⍟(1⊸≡) (lst≠ln)∨¬stack.cont #FIXME: cleanup
 
     lst↩ln
-    stack.cont∨¬ptrace  # Changes to 0 on return or abort
+    stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
   Step _while_ ⊢ 1
+  dbg.Pop 1
   stack.rslt
 }
 
@@ -233,7 +225,7 @@ AdaptConst ← {
 }
 
 # Evaluate a program, given the compiler output
-{ ctx VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+{ z VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
 
   bodies ← {start‿vars‿names‿export:
@@ -241,7 +233,7 @@ AdaptConst ← {
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      ctx RunBC bc‿start‿env‿loc
+      z RunBC bc‿start‿env‿loc
     }
   }¨ bodyInfo
 
