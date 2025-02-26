@@ -29,12 +29,12 @@ Info←{
   src   ⇐ •file.Chars file
   lines ⇐ •file.Lines file
   ln    ⇐ 1++`src=lf  # line numbers #TODO remove line 1 offset
-  col   ⇐ ∾(↕≠)¨lines # column numbers
+  col   ⇐ ∾(↕≠)¨⊔˜+`src=@+10
+  #∾(↕≠)¨lines # column numbers
 }
 
 ctx ⇐ {
   s ⇐ ⟨⟩
-
   Push ⇐ { 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") Peek @
     {𝕩 fmap.Set Info f}⍟(¬∘fmap.Has) f
@@ -49,14 +49,16 @@ ctx ⇐ {
 # Debug stack: keep track of calls
 dbg ← {
   s ← ⟨⟩                          # Stack (a list)
-  Push  ⇐ {
-    •SHow ctx.Peek@
-    # ctx get file and linenumber
-    s∾↩<𝕩
-  }                 # Push a value
+  Push  ⇐ {s∾↩<𝕩 } # p: start/end position of call
   Pop   ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Print ⇐ { 𝕊: 
     •Out "Error: " ∾ •CurrentError@
+    {𝕊 off‿col‿ln‿file : 
+      info←fmap.Get file
+      •Out ∾⟨file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt ln⟩
+      •Out ∾⟨"  ",(ln-1)⊑info.lines⟩
+      •Out ∾⟨"  ",(' '¨↕col), '∧'¨↕off+1⟩
+    }¨⌽s
   }
 }
 
