@@ -55,7 +55,7 @@ dbg ← {
     •Out "Error: " ∾ •CurrentError@
     {𝕊 off‿col‿ln‿file : 
       info←fmap.Get file
-      •Out ∾⟨file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt ln⟩
+      •Out ∾⟨ansi.bold_cyan, file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt ln, ansi.reset⟩
       •Out ∾⟨"  ",(ln-1)⊑info.lines⟩
       •Out ∾⟨"  ",(' '¨↕col), '∧'¨↕off+1⟩
     }¨⌽s
