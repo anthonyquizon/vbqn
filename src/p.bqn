@@ -139,11 +139,10 @@ PBQNFile←{
       bkt←1⊑𝕨
       Run⇐{ 
         h 𝕊 ln: bkt≡ln ?
-          #h.Keys@, h.Values@
+          k←h.Keys@ ⋄ v←h.Values@
           •Out ansi.bold_cyan∾p∾ansi.reset
-          #bqn← •ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩}
-          #•Show BQN "•args"
-          #•Show  BQN ∾⟨"⟨",1↓∾','⊸∾¨n,"⟩← •args",lf,src⟩
+          bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
+          •Show BQN ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
       ; @
       } 
     }¨p⋈¨(m/¨p)
