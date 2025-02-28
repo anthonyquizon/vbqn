@@ -27,10 +27,9 @@ Info←{
   file  ⇐ 𝕩
   query ⇐ (0⊸≠≠)◶⟨⟩‿(pmap.Get∘⊑) k
   src   ⇐ •file.Chars file
-  lines ⇐ •file.Lines file
-  ln    ⇐ 1++`src=lf  # line numbers #TODO remove line 1 offset
+  lines ⇐ (lf⊸≠)⊸/¨src⊔˜»+`lf=src
+  ln    ⇐ +`src=lf  
   col   ⇐ ∾(↕≠)¨⊔˜+`src=@+10
-  #∾(↕≠)¨lines # column numbers
 }
 
 ctx ⇐ {
@@ -99,14 +98,12 @@ System ←{ 𝕊 args:
 }
 
 CmpCatch←{ info 𝕊 src:
-  ⟨lines,file⟩←info
   ⟨loc,msg⟩←•CurrentError@
   s‿e←loc↩⥊loc
-  ln←lines⊑˜⊑loc
-  m←∨´lines⊸=¨lines⊏˜loc
+  m←∨´info.ln⊸=¨loc⊏info.ln
   •Out "Error: "∾msg
-  •Out file∾":"∾•Fmt ln
-  •Out 1↓m/src
+  •Out info.file∾":"∾ •Fmt s⊑info.ln
+  •Out (s⊑info.ln)⊑info.lines
   •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
   •Exit 1
 }
