@@ -193,26 +193,35 @@ EnvVars←{
 # Evaluate a body
 RunBC ← { info‿dbg 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
-  Line ← {𝕊: info.ln⊑˜⊑pos⊑¨loc }
+  Line ← {𝕊: info.ln⊑˜pos⊑⊑loc }
   stack ← MakeStack ⟨⟩
   lst←Line@
+
+  max←⌈´info.ln⊏˜⊑loc # max line
   
   Step ← {𝕊:
+    #•Show info.src⊏˜{a‿b:a+↕(1+b-a) }pos⊑¨loc
     ln ← Line@
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
 
     {𝕊: 
-    dbg.Push (|-´(pos-1)⊑¨loc)‿(info.col⊑˜1-˜⊑(pos-1)⊑¨loc)‿lst‿info.file }⍟(1⊸≡) ∨´i=trace_ops
+    dbg.Push (|-´(pos-1)⊑¨loc)‿(info.col⊑˜1-˜⊑(pos-1)⊑¨loc)‿lst‿info.file }⍟(1⊸≡) ∨´i⍷trace_ops
     stack Op⎊{𝕊: dbg.Print @ ⋄ •Exit 1} env
-    {𝕊: (EnvVars env)⊸{𝕨 𝕩.Run ln}¨info.query}⍟(1⊸≡) (lst≠ln)∨¬stack.cont #FIXME: cleanup
-    {𝕊: dbg.Pop 1}⍟(1⊸≡) ∨´i=trace_ops
-
+    #{h←EnvVars env ⋄ •Show ⟨h.Keys@,h.Values@⟩}
+    #stack Op env
+    #{𝕊: •Show "lst:"‿lst}⍟(1⊸≡) (lst≠ln)∨¬stack.cont #FIXME: cleanup
+    {𝕊: (EnvVars env)⊸{𝕨 𝕩.Run ≡‿(lst+1)}¨info.query}⍟(1⊸≡) (lst≠ln) #FIXME: cleanup
+    #{𝕊: (EnvVars env)⊸{𝕨 𝕩.Run ≡‿ln}¨info.query}⍟(1⊸≡) (lst≠ln)
+    {𝕊: dbg.Pop 1}⍟(1⊸≡) ∨´i⍷trace_ops
+    #{h←EnvVars env ⋄ •Show ⟨h.Keys@,h.Values@⟩}
+    #•Show "cont"‿(stack.cont)‿ln
     lst↩ln
     stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
   Step _while_ ⊢ 1
+
   stack.rslt
 }
 

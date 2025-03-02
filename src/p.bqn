@@ -99,8 +99,8 @@ System ←{ 𝕊 args:
 
 CmpCatch←{ info 𝕊 src:
   ⟨loc,msg⟩←•CurrentError@
-  s‿e←loc↩⥊loc
-  m←∨´info.ln⊸=¨loc⊏info.ln
+  s‿e←loc↩⥊loc # convert to ⟨s,e⟩
+  m←∨´info.ln⊸=¨loc⊏info.ln # 
   •Out "Error: "∾msg
   •Out info.file∾":"∾ •Fmt s⊑info.ln
   •Out (s⊑info.ln)⊑info.lines
@@ -115,7 +115,7 @@ Run⇐Import ⇐ {
     info←ctx.Push 𝕩
 
     c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊(info⊸CmpCatch) info.src
-    r ← info‿dbg VM c
+    r ← {info⇐info⋄dbg⇐dbg} VM c
 
     𝕩 imap.Set r
     ctx.Pop 1 
@@ -135,7 +135,8 @@ PBQNFile←{
     q← loc { 𝕨 𝕊 ⟨p,src⟩: 
       bkt←1⊑𝕨
       Run⇐{ 
-        h 𝕊 ln: bkt≡ln ?
+        h 𝕊 cmp‿ln: bkt ≡ ln ?
+          •Show bkt‿ln
           k←h.Keys@ ⋄ v←h.Values@
           •Out ansi.bold_cyan∾p∾ansi.reset
           bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
@@ -156,8 +157,9 @@ usage←∾∾⟜lf¨⟨
 # === Main ===
 {
   {𝕊: •Out usage ⋄ •Exit 0}⍟(0⊸=) ≠•args 
-  f←(¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args ⋄ "Missing input file" ! 1≥≠f
+  f←(¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args ⋄ "Missing input file" ! 0<≠f
   p←(0⊸<≠)◶pfile‿⊑  (»"-p"⊸≡¨)⊸/•args
   PBQNFile •wdpath∾'/'∾p
+  •Out "--PBQN--"
   Run •wdpath∾"/"∾⊑f
 }
