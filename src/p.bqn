@@ -122,6 +122,26 @@ Run⇐Import ⇐ {
     r
 }
 
+MakeQuery⇐{ f‿b‿c 𝕊 p‿src:
+  n←0
+
+  Cond←{ 𝕊:
+    n←n+1
+    #bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
+    #•Show BQN ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,c⟩
+    1
+  }
+
+  Run⇐{ 
+    h 𝕊 cmp‿ln: (≡⟜ln)◶0‿Cond b ? 
+      k←h.Keys@ ⋄ v←h.Values@
+      •Out ansi.bold_cyan∾p∾ansi.reset
+      bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
+      •Show BQN ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
+  ; @
+  } 
+}
+
 PBQNFile←{ 
   𝕊 𝕩 : •file.Exists 𝕩 ? 
     p←•file.Lines 𝕩
@@ -129,22 +149,10 @@ PBQNFile←{
     p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p    # remove empty lines
     p↩p/˜(0<≠)¨p
     m←{1≤+`𝕩=' '}¨p
-    loc←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
-    file←⊑¨loc
-    g←⊐file
-    q← loc { 𝕨 𝕊 ⟨p,src⟩: 
-      bkt←1⊑𝕨
-      Run⇐{ 
-        h 𝕊 cmp‿ln: bkt ≡ ln ?
-          •Show bkt‿ln
-          k←h.Keys@ ⋄ v←h.Values@
-          •Out ansi.bold_cyan∾p∾ansi.reset
-          bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
-          •Show BQN ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
-      ; @
-      } 
-    }¨p⋈¨(m/¨p)
-    (⊑¨g⊔file) pmap.Set¨g⊔q
+    l←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
+    f←⊑¨l↩(3↑∾⟜1)¨l # enforce default conditional value
+    q←l MakeQuery¨p⋈¨m/¨p
+    (⊑¨⊐⊸⊔f) pmap.Set¨q⊔˜⊐f # store queries matched to filenames
 ; 𝕊 𝕩 : •Out "Missing pbqn file " ∾ 𝕩
 }
 
