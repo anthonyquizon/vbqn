@@ -122,22 +122,26 @@ Run⇐Import ⇐ {
     r
 }
 
+BQN←{
+  k←𝕨.Keys@ ⋄ v←𝕨.Values@
+  eval←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩}
+  Eval ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,𝕩⟩
+}
+
 MakeQuery⇐{ f‿b‿c 𝕊 p‿src:
   n←0
 
-  Cond←{ 𝕊:
-    n←n+1
-    #bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
-    #•Show BQN ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,c⟩
-    1
+  Cond←{ 
+    c≡1 ? 1 ;
+      n←n+1
+      1≡𝕩 Bqn c # TODO line number
   }
 
   Run⇐{ 
-    h 𝕊 cmp‿ln: (≡⟜ln)◶0‿Cond b ? 
+    h 𝕊 cmp‿ln: (b≡ln)◶0‿Cond h ? 
       k←h.Keys@ ⋄ v←h.Values@
       •Out ansi.bold_cyan∾p∾ansi.reset
-      bqn←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩} 
-      •Show BQN ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
+      •Show h Bqn src
   ; @
   } 
 }
