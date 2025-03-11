@@ -123,10 +123,8 @@ Run⇐Import ⇐ {
 ; · 𝕊 𝕩 : imap.Has 𝕩 ? imap.Get 𝕩
 ; args 𝕊 𝕩 : 
     info←ctx.Push 𝕩
-
     c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊(info⊸CmpCatch) info.src
-    r ← {info⇐info⋄dbg⇐dbg} VM c
-
+    r ← info‿dbg VM c
     𝕩 imap.Set r
     ctx.Pop 1 
     r
@@ -138,11 +136,14 @@ BQN←{ h‿sys 𝕊 src:
   Eval ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
 }
 
-MakeQuery⇐{ f‿b‿c 𝕊 p‿src:
+# f: file to query
+# b: breakpoint to run query code
+# c: conditional code to run to decide if src will be run
+MakeQuery⇐{ f‿b‿c 𝕊 p‿src: 
   n←0
   Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
   Run⇐{ 
-    h 𝕊 cmp‿ln: (b≡ln)◶0‿Cond h ? 
+    h 𝕊 ln: (b≡ln)◶0‿Cond h ? 
       •Out ansi.bold_cyan∾p∾ansi.reset
       •Show h‿⟨⟩ Bqn src
   ; @

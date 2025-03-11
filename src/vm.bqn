@@ -204,8 +204,10 @@ RunBC ← { info‿dbg 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position
     op ↩ Op next
 
     {𝕊:dbg.Push pos‿loc}⍟(1⊸≡) ∨´i⍷trace_ops
+
     stack Op⎊{𝕊: dbg.Print @ ⋄ •Exit 1} env
-    {𝕊:(EnvVars env)⊸{𝕨 𝕩.Run lst+1}¨info.query}⍟(1⊸≡) (lst≠ln) #FIXME: cleanup
+    {𝕊:(EnvVars env)⊸{𝕨 𝕩.Run lst+1}¨info.query}⍟(1⊸≡) (lst≠ln) 
+
     {𝕊:dbg.Pop 1}⍟(1⊸≡) ∨´i⍷trace_ops
     lst↩ln
     stack.cont  # Changes to 0 on return or abort
@@ -226,7 +228,7 @@ AdaptConst ← {
 }
 
 # Evaluate a program, given the compiler output
-{ z VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+{ info‿dbg VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
 
   bodies ← {start‿vars‿names‿export:
@@ -234,7 +236,7 @@ AdaptConst ← {
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      z RunBC bc‿start‿env‿loc
+      info‿dbg RunBC bc‿start‿env‿loc
     }
   }¨ bodyInfo
 
