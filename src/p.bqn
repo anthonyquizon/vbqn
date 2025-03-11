@@ -5,7 +5,10 @@ vm      ←    •Import "./vm.bqn"
 ansi←{
   e⇐@+27
   bold_cyan⇐e∾"[1;36m"
-  reset⇐e∾"[0m"
+  red      ⇐e∾"[31m"
+  magenta  ⇐e∾"[35m"
+  bold_red ⇐e∾"[1;31m"
+  reset    ⇐e∾"[0m"
 }
 
 pfile←".p.bqn"
@@ -35,9 +38,9 @@ Info←{
 ctx ⇐ {
   s ⇐ ⟨⟩
   Push ⇐ { 𝕊 𝕩:
-    f←𝕩∾˜(0⊸≢≠)◶""‿(•ns.Get⟜"cwd") Peek @
+    f←𝕩∾˜(0⊸≢≠)◶""‿⊣ Peek @
     {𝕩 fmap.Set Info f}⍟(¬∘fmap.Has) f
-    s∾↩< { cwd⇐•file.Parent f }
+    s∾↩<f
     fmap.Get f
   }
 
@@ -48,15 +51,22 @@ ctx ⇐ {
 # Debug stack: keep track of calls
 dbg ← {
   s ← ⟨⟩                          # Stack (a list)
-  Push  ⇐ {s∾↩<𝕩 } # p: start/end position of call
+  Push  ⇐ { 𝕊 pos‿loc: # pos: index position of bytecode, loc: start/end position of call
+    info←fmap.Get ctx.Peek @
+    o←|-´(pos-1)⊑¨loc # offset
+    c←info.col⊑˜1-˜⊑(pos-1)⊑¨loc #column
+    l←info.ln⊑˜pos⊑⊑loc #line
+    f←info.file #file
+    s∾↩<o‿c‿l‿f 
+  } 
   Pop   ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Print ⇐ { 𝕊: 
-    •Out "Error: " ∾ •CurrentError@
-    {𝕊 off‿col‿ln‿file : 
-      info←fmap.Get file
-      •Out ∾⟨ansi.bold_cyan, file/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷file,':',•Fmt ln, ansi.reset⟩
-      •Out ∾⟨"  ",(ln-1)⊑info.lines⟩
-      •Out ∾⟨"  ",(' '¨↕col), '∧'¨↕off+1⟩
+    •Out ∾⟨ansi.bold_red,"Error: ", •CurrentError@,ansi.reset⟩
+    {𝕊 o‿c‿l‿f : 
+      info←fmap.Get f
+      •Out ∾⟨ansi.red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, ansi.reset⟩
+      •Out ∾⟨"  ",(l-1)⊑info.lines⟩
+      •Out ∾⟨ansi.red, "  ",(' '¨↕c), '∧'¨↕o+1, ansi.reset⟩
     }¨⌽s
   }
 }
@@ -64,9 +74,9 @@ dbg ← {
 file⇐{
   Lines⇐{ 
     𝕩 : "/"≤○≠◶0‿(⊣≡≠⊸↑)𝕩 ? •file.Lines 𝕩 
-  ; 𝕩 : ⟨cwd⟩←ctx.Peek @ ⋄ •file.Lines cwd∾𝕩 
+  ; 𝕩 : •file.Lines ∾⟜𝕩 •file.Parent ctx.Peek @ ⋄ 
   } 
-  List ⇐{ ⟨cwd⟩←ctx.Peek @ ⋄ •file.List  cwd∾𝕩 } 
+  List ⇐{ •file.List ∾⟜𝕩 •file.Parent ctx.Peek @ } 
 }
 
 syslist←⟨
@@ -122,26 +132,19 @@ Run⇐Import ⇐ {
     r
 }
 
-BQN←{
-  k←𝕨.Keys@ ⋄ v←𝕨.Values@
-  eval←•ReBQN {system⇐⟨"show"‿•Show, "p"‿•Show, "args"‿v⟩}
-  Eval ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,𝕩⟩
+BQN←{ h‿sys 𝕊 src:
+  k←h.Keys@ ⋄ v←h.Values@
+  eval←•ReBQN {system⇐sys∾⟨"args"‿v⟩}
+  Eval ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
 }
 
 MakeQuery⇐{ f‿b‿c 𝕊 p‿src:
   n←0
-
-  Cond←{ 
-    c≡1 ? 1 ;
-      n←n+1
-      1≡𝕩 Bqn c # TODO line number
-  }
-
+  Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
   Run⇐{ 
     h 𝕊 cmp‿ln: (b≡ln)◶0‿Cond h ? 
-      k←h.Keys@ ⋄ v←h.Values@
       •Out ansi.bold_cyan∾p∾ansi.reset
-      •Show h Bqn src
+      •Show h‿⟨⟩ Bqn src
   ; @
   } 
 }
