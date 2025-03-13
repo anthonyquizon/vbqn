@@ -173,10 +173,9 @@ ops ← ((!∘"Unknown opcode")˙⊣´⊢)¨ ⊔˝ ⍉> ⟨
   66‿{i←𝕏@ ⋄ {s𝕊e: s.Push e‿i ref.Alias ⊑s.Pop 1 } }
 ⟩
 
-# TODO opcode for application
 trace_ops←⟨
   16,17,20,21,26,27,   # Application
-  18,19,23,22 # Application with Nothing
+  18,19,23,22          # Application with Nothing
 ⟩
 
 EnvVars←{
@@ -191,25 +190,24 @@ EnvVars←{
 }
 
 # Evaluate a body
-RunBC ← { info‿dbg 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment, start/end position of bytecode in source
+RunBC ← { insp‿dbg 𝕊 bc‿pos‿env‿loc:  # bytecode, starting position, environment, start/end position of bytecode in source
   Next ← {𝕊: (pos+↩1) ⊢ pos⊑bc }
-  Line ← {𝕊: info.ln⊑˜pos⊑⊑loc }
   stack ← MakeStack ⟨⟩
-  lst←Line@
-  max←⌈´info.ln⊏˜⊑loc # max line
   
+  insp.Pre pos‿loc
+
   Step ← {𝕊:
-    ln ← Line@
     op ← (i←Next@) ⊑ ops
     op ↩ Op next
 
     {𝕊:dbg.Push pos‿loc}⍟(1⊸≡) ∨´i⍷trace_ops
 
-    stack Op⎊{𝕊: dbg.Print @ ⋄ •Exit 1} env
-    {𝕊:(EnvVars env)⊸{𝕨 𝕩.Run lst+1}¨info.query}⍟(1⊸≡) (lst≠ln) 
+    stack Op⎊{𝕊:dbg.Print@⋄•Exit 1} env
+
+    (EnvVars env) insp.Run pos‿loc
 
     {𝕊:dbg.Pop 1}⍟(1⊸≡) ∨´i⍷trace_ops
-    lst↩ln
+
     stack.cont  # Changes to 0 on return or abort
   }
   _while_ ← {𝔽⍟𝔾∘𝔽_𝕣_𝔾∘𝔽⍟𝔾𝕩}
@@ -228,7 +226,7 @@ AdaptConst ← {
 }
 
 # Evaluate a program, given the compiler output
-{ info‿dbg VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
+{ insp‿dbg VM bc‿consts‿blockInfo‿bodyInfo‿loc‿token:
   consts↩AdaptConst¨consts
 
   bodies ← {start‿vars‿names‿export:
@@ -236,7 +234,7 @@ AdaptConst ← {
     {parent 𝕊 args:
       env ← MakeEnv parent‿vars‿names‿export
       (⊢ {𝕩.SetN 𝕨}¨ ≠↑env.vars˙) args  # Initialize arguments
-      info‿dbg RunBC bc‿start‿env‿loc
+      insp‿dbg RunBC bc‿start‿env‿loc
     }
   }¨ bodyInfo
 

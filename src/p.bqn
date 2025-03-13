@@ -11,37 +11,28 @@ ansi←{
   reset    ⇐e∾"[0m"
 }
 
-pfile←".p.bqn"
-
 lf←@+10
-
-fmap←⟨⟩ •HashMap ⟨⟩
-imap←⟨⟩ •HashMap ⟨⟩ #cached imported files
-pmap←⟨⟩ •HashMap ⟨⟩ #cached queries match to filenames
+fm←⟨⟩ •HashMap ⟨⟩ #cached file information
+im←⟨⟩ •HashMap ⟨⟩ #cached imported files
+pm←⟨⟩ •HashMap ⟨⟩ #cached queries match to filenames
 
 Info←{ 
-  k←pmap.Keys @
-
-  z←𝕩/˜¬".bqn"⊸≡¨¯4↑¨𝕩 
-  k↩k/˜∨´¨⍷⟜z¨k # take first matching files
-
-  ("Missing file " ∾ 𝕩) ! •file.Exists 𝕩
-
-  file  ⇐ 𝕩
-  query ⇐ (0⊸≠≠)◶⟨⟩‿(pmap.Get∘⊑) k
-  src   ⇐ •file.Chars file
-  lines ⇐ (lf⊸≠)⊸/¨src⊔˜»+`lf=src
-  ln    ⇐ +`src=lf  
-  col   ⇐ ∾(↕≠)¨⊔˜+`src=@+10
+  f ⇐ 𝕩∾".bqn"⋄("Missing file "∾f)!•file.Exists f # filename
+  s ⇐ •file.Chars f                 # source files in chars
+  l ⇐ (lf⊸≠)⊸/¨s⊔˜»+`lf=s           # source file in lines
+  n ⇐ +`s=lf                        # line numbers
+  c ⇐ ∾(↕≠)¨⊔˜+`s=@+10              # column numbers
+  m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l # maximum line number
 }
 
 ctx ⇐ {
   s ⇐ ⟨⟩
   Push ⇐ { 𝕊 𝕩:
     f←𝕩∾˜(0⊸≢≠)◶""‿⊣ Peek @
-    {𝕩 fmap.Set Info f}⍟(¬∘fmap.Has) f
+    f↩f/˜¬+`(≠↑".bqn"⊸⍷)f # normalize: remove .bqn
+    {𝕩 fm.Set Info 𝕩}⍟(¬∘fm.Has) f
     s∾↩<f
-    fmap.Get f
+    fm.Get f
   }
 
   Peek ⇐ {𝕊: 0=≠s ? ⟨⟩;¯1⊑s}                 # Return but don't pop top value
@@ -50,28 +41,28 @@ ctx ⇐ {
 
 # Debug stack: keep track of calls
 dbg ← {
-  s ← ⟨⟩                          # Stack (a list)
+  s ← ⟨⟩                          
   Push  ⇐ { 𝕊 pos‿loc: # pos: index position of bytecode, loc: start/end position of call
-    info←fmap.Get ctx.Peek @
-    o←|-´(pos-1)⊑¨loc # offset
-    c←info.col⊑˜1-˜⊑(pos-1)⊑¨loc #column
-    l←info.ln⊑˜pos⊑⊑loc #line
-    f←info.file #file
+    i←fm.Get ctx.Peek @
+    o←|-´(pos-1)⊑¨loc       # offset
+    c←i.c⊑˜1-˜⊑(pos-1)⊑¨loc # column
+    l←i.n⊑˜pos⊑⊑loc         # line
+    f←i.f                   # file
     s∾↩<o‿c‿l‿f 
   } 
   Pop   ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Print ⇐ { 𝕊: 
     •Out ∾⟨ansi.bold_red,"Error: ", •CurrentError@,ansi.reset⟩
     {𝕊 o‿c‿l‿f : 
-      info←fmap.Get f
+      i←fm.Get f
       •Out ∾⟨ansi.red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, ansi.reset⟩
-      •Out ∾⟨"  ",(l-1)⊑info.lines⟩
+      •Out ∾⟨"  ",(l-1)⊑i.l⟩
       •Out ∾⟨ansi.red, "  ",(' '¨↕c), '∧'¨↕o+1, ansi.reset⟩
     }¨⌽s
   }
 }
 
-file⇐{
+sysfile⇐{
   Lines⇐{ 
     𝕩 : "/"≤○≠◶0‿(⊣≡≠⊸↑)𝕩 ? •file.Lines 𝕩 
   ; 𝕩 : •file.Lines ∾⟜𝕩 •file.Parent ctx.Peek @ ⋄ 
@@ -87,8 +78,8 @@ syslist←⟨
     "ffi"‿•FFI
     "out"‿•Out
     "exit"‿•Exit
-    "file"‿file
-    "flines"‿file.Lines
+    "file"‿sysfile
+    "flines"‿sysfile.Lines
     "math"‿•math
     "ns"  ‿•ns
     "show"‿•Show
@@ -107,62 +98,73 @@ System ←{ 𝕊 args:
   { 𝕨⊸FindSys⊏𝕩˙ }´∾<˘⋈˘⍉>syslist∾⟨ "import"‿Import, "args"‿𝕩 ⟩
 }
 
-CmpCatch←{ info 𝕊 src:
+CmpCatch←{ 𝕊 src:
+  in←ctx.Peek@
   ⟨loc,msg⟩←•CurrentError@
   s‿e←loc↩⥊loc # convert to ⟨s,e⟩
-  m←∨´info.ln⊸=¨loc⊏info.ln # 
+  m←∨´in.n⊸=¨loc⊏in.n # 
   •Out "Error: "∾msg
-  •Out info.file∾":"∾ •Fmt s⊑info.ln
-  •Out (s⊑info.ln)⊑info.lines
+  •Out in.f∾":"∾ •Fmt s⊑in.n
+  •Out (s⊑in.n)⊑in.l
   •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
   •Exit 1
 }
 
-Run⇐Import ⇐ {
-    𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
-; · 𝕊 𝕩 : imap.Has 𝕩 ? imap.Get 𝕩
-; args 𝕊 𝕩 : 
-    info←ctx.Push 𝕩
-    c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊(info⊸CmpCatch) info.src
-    r ← info‿dbg VM c
-    𝕩 imap.Set r
-    ctx.Pop 1 
-    r
+MakeInsp←{𝕊:
+  f←ctx.Peek @ ⋄ in←fm.Get f ⋄ q←pm.Has◶⟨⟩‿pm.Get f
+  i←@ ⋄ ls←@
+
+  •Show pm.Values@
+  •Show pm.Keys@
+  Pre⇐{pos‿loc:ls↩in.n⊑˜pos⊑⊑loc}
+  #Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
+  Run⇐{ 
+    # TODO type
+    · 𝕊 ·: 0≡≠q? @
+  ; h 𝕊 pos‿loc: 
+      l←in.n⊑˜(pos-1)⊑⊑loc ⋄ k←h.Keys@ ⋄ v←h.Values@
+      bqn←•ReBQN {system⇐⟨"args"‿v, "i"‿i, "l"‿l⟩}
+      Eval←{Bqn ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩←•args",lf,𝕩⟩}
+
+      #•Show m←{·‿s: Eval s}¨q
+      #{𝕊:(EnvVars env)⊸{𝕨 𝕩.Run lst+1}¨info.query}⍟(1⊸≡) (lst≠ln) 
+
+      #ln ← Line@
+      #lst↩ln
+  }
 }
 
-BQN←{ h‿sys 𝕊 src:
-  k←h.Keys@ ⋄ v←h.Values@
-  eval←•ReBQN {system⇐sys∾⟨"args"‿v⟩}
-  Eval ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩← •args",lf,src⟩
+Run⇐Import ⇐ {
+    𝕊 𝕩 : ⟨⟩ 𝕊 𝕩
+; · 𝕊 𝕩 : im.Has 𝕩 ? im.Get 𝕩
+; args 𝕊 𝕩 : 
+    in←ctx.Push 𝕩
+    insp←MakeInsp @
+
+    c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
+    r ← insp‿dbg VM c
+    𝕩 im.Set r
+    ctx.Pop 1 
+    r
 }
 
 # f: file to query
 # b: breakpoint to run query code
 # c: conditional code to run to decide if src will be run
-MakeQuery⇐{ f‿b‿c 𝕊 p‿src: 
-  n←0
-  Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
-  Run⇐{ 
-    h 𝕊 ln: (b≡ln)◶0‿Cond h ? 
-      •Out ansi.bold_cyan∾p∾ansi.reset
-      •Show h‿⟨⟩ Bqn src
-  ; @
-  } 
-}
-
-PBQNFile←{ 
-  𝕊 𝕩 : •file.Exists 𝕩 ? 
-    p←•file.Lines 𝕩
-    p↩{𝕩/˜0=+`𝕩='#'}¨p        # remove comments
-    p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p    # remove empty lines
-    p↩p/˜(0<≠)¨p
-    m←{1≤+`𝕩=' '}¨p
-    l←•ParseFloat⎊⊣¨¨":"⊸((⊢-˜¬×·+`1⊸»⊸<)∘∊˜⊔⊢)¨(¬m)/¨p
-    f←⊑¨l↩(3↑∾⟜1)¨l # enforce default conditional value
-    q←l MakeQuery¨p⋈¨m/¨p
-    (⊑¨⊐⊸⊔f) pmap.Set¨q⊔˜⊐f # store queries matched to filenames
-; 𝕊 𝕩 : •Out "Missing pbqn file " ∾ 𝕩
-}
+#MakeQuery0⇐{ f‿b‿c 𝕊 p‿src: 
+  #{(•wdpath∾'/'∾𝕩∾".bqn") fm.Set Info •wdpath∾'/'∾𝕩∾".bqn"}⍟(¬∘fm.Has)¨f
+  #info←fm.Get •wdpath∾'/'∾f∾".bqn"
+  #•Show b↩info.max⌊b
+  #n←0
+  #Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
+  #Run⇐{ 
+    ##h 𝕊 ln: (•Show b≡ln)◶0‿Cond h ? 
+    #h 𝕊 ln: (b≡•Show ln) ? 
+      #•Out ansi.bold_cyan∾p∾ansi.reset
+      #•Show h‿⟨⟩ Bqn src
+  #; @
+  #} 
+#}
 
 usage←∾∾⟜lf¨⟨
   "Usage: pbqn [options] [file.bqn [arguments]]"
@@ -172,10 +174,18 @@ usage←∾∾⟜lf¨⟨
 
 # === Main ===
 {
-  {𝕊: •Out usage ⋄ •Exit 0}⍟(0⊸=) ≠•args 
-  f←(¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args ⋄ "Missing input file" ! 0<≠f
-  p←(0⊸<≠)◶pfile‿⊑  (»"-p"⊸≡¨)⊸/•args
-  PBQNFile •wdpath∾'/'∾p
-  •Out "--PBQN--"
-  Run •wdpath∾"/"∾⊑f
+  {𝕊:•Out usage⋄•Exit 0}⍟(0⊸=)≠•args 
+
+  # parse PBQN files
+  p←•wdpath∾'/'∾(0⊸<≠)◶".p.bqn"‿⊑  (»"-p"⊸≡¨)⊸/•args
+  p↩•file.Exists◶{𝕊: •Out "Missing .p.bqn file"⋄⟨⟩}‿•file.Lines p
+  p↩{𝕩/˜0=+`𝕩='#'}¨p                   # remove comments
+  p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p               # trim whitespace
+  p↩p/˜(0<≠)¨p                         # remove empty lines
+  p↩{𝕩⊔˜○((¬':'=𝕩)⊸/)+´(⌈`=⟜𝕩)¨": "}¨p # parse into groups file:line query (TODO parse : not in {} or ())
+  p↩•ParseFloat⎊⊣¨¨p
+  (1⊸↓¨p)((·⊑¨⊐∘⊢⊔⊢)pm.Set¨(⊢⟜⊐⊔⊣))⊑¨p # store queries in pm 
+
+  •Out ∾⟨ansi.magenta,"--",ansi.reset⟩ # print start of run marker
+  (0≠≠)◶("Missing input file"⊸!)‿{Run•wdpath∾'/'∾∾𝕩} (¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args 
 }
