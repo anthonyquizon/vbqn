@@ -22,7 +22,7 @@ Info←{
   l ⇐ (lf⊸≠)⊸/¨s⊔˜»+`lf=s           # source file in lines
   n ⇐ +`s=lf                        # line numbers
   c ⇐ ∾(↕≠)¨⊔˜+`s=@+10              # column numbers
-  m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l # maximum line number
+  m ⇐ ≠/˜⌽0<+`⌽¬(0⊸=≠¨l)∨∧´¨' '⊸=¨l # maximum line number TODO delete - instead snap to nearest line above
 }
 
 ctx ⇐ {
@@ -99,14 +99,11 @@ System ←{ 𝕊 args:
 }
 
 CmpCatch←{ 𝕊 src:
-  in←ctx.Peek@
-  ⟨loc,msg⟩←•CurrentError@
-  s‿e←loc↩⥊loc # convert to ⟨s,e⟩
-  m←∨´in.n⊸=¨loc⊏in.n # 
+  in←ctx.Peek@⋄⟨loc,msg⟩←•CurrentError@⋄s‿e←loc↩⥊loc
   •Out "Error: "∾msg
   •Out in.f∾":"∾ •Fmt s⊑in.n
   •Out (s⊑in.n)⊑in.l
-  •Out ⊣◶" ∧"¨«(m/↕≠src)∊(s+↕1+e-s)
+  •Out ⊣◶" ∧"¨«((↕≠src)/˜∨´in.n⊸=¨loc⊏in.n)∊s+↕1+e-s
   •Exit 1
 }
 
@@ -114,23 +111,21 @@ MakeInsp←{𝕊:
   f←ctx.Peek @ ⋄ in←fm.Get f ⋄ q←pm.Has◶⟨⟩‿pm.Get f
   i←@ ⋄ ls←@
 
-  •Show pm.Values@
-  •Show pm.Keys@
   Pre⇐{pos‿loc:ls↩in.n⊑˜pos⊑⊑loc}
-  #Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
-  Run⇐{ 
-    # TODO type
+  Run⇐{
     · 𝕊 ·: 0≡≠q? @
-  ; h 𝕊 pos‿loc: 
-      l←in.n⊑˜(pos-1)⊑⊑loc ⋄ k←h.Keys@ ⋄ v←h.Values@
-      bqn←•ReBQN {system⇐⟨"args"‿v, "i"‿i, "l"‿l⟩}
-      Eval←{Bqn ∾⟨"⟨",1↓∾','⊸∾¨k,"⟩←•args",lf,𝕩⟩}
+  ; h 𝕊 pos‿loc: l←in.n⊑˜(pos-1)⊑⊑loc⋄ls≠l ?  # TODO if values have changed, not line
+    bqn←•ReBQN {system⇐⟨"args"‿(h.Values@), "i"‿i, "l"‿l⟩}
+    # TODO inject 𝕩 and 𝕨 arguments
+    Eval←{Bqn ∾⟨"⟨",1↓∾','⊸∾¨(h.Keys@),"⟩←•args",lf,𝕩⟩}
 
-      #•Show m←{·‿s: Eval s}¨q
-      #{𝕊:(EnvVars env)⊸{𝕨 𝕩.Run lst+1}¨info.query}⍟(1⊸≡) (lst≠ln) 
+    {
+     •Out ∾⟨ansi.bold_cyan,0⊑𝕩,':',•Fmt 1⊑𝕩,' ',2⊑𝕩,ansi.reset⟩
+     •Show Eval 2⊑𝕩
+    }¨q/˜l=1⊸⊑¨q # mask all valid line number queries # TODO conditional queries mask
 
-      #ln ← Line@
-      #lst↩ln
+    ls↩l
+  ; @
   }
 }
 
@@ -142,29 +137,12 @@ Run⇐Import ⇐ {
     insp←MakeInsp @
 
     c ← (⟨1⊸⊑¨•primitives, System args, ⟨⟩⟩⊸Compile)⎊CmpCatch in.s
+    # TODO parse all locations and snap to nearest
     r ← insp‿dbg VM c
     𝕩 im.Set r
     ctx.Pop 1 
     r
 }
-
-# f: file to query
-# b: breakpoint to run query code
-# c: conditional code to run to decide if src will be run
-#MakeQuery0⇐{ f‿b‿c 𝕊 p‿src: 
-  #{(•wdpath∾'/'∾𝕩∾".bqn") fm.Set Info •wdpath∾'/'∾𝕩∾".bqn"}⍟(¬∘fm.Has)¨f
-  #info←fm.Get •wdpath∾'/'∾f∾".bqn"
-  #•Show b↩info.max⌊b
-  #n←0
-  #Cond←{ c≡1 ? 1 ; n↩n+1 ⋄ 1≡ 𝕩‿⟨"n"‿n⟩ Bqn c }
-  #Run⇐{ 
-    ##h 𝕊 ln: (•Show b≡ln)◶0‿Cond h ? 
-    #h 𝕊 ln: (b≡•Show ln) ? 
-      #•Out ansi.bold_cyan∾p∾ansi.reset
-      #•Show h‿⟨⟩ Bqn src
-  #; @
-  #} 
-#}
 
 usage←∾∾⟜lf¨⟨
   "Usage: pbqn [options] [file.bqn [arguments]]"
@@ -184,7 +162,7 @@ usage←∾∾⟜lf¨⟨
   p↩p/˜(0<≠)¨p                         # remove empty lines
   p↩{𝕩⊔˜○((¬':'=𝕩)⊸/)+´(⌈`=⟜𝕩)¨": "}¨p # parse into groups file:line query (TODO parse : not in {} or ())
   p↩•ParseFloat⎊⊣¨¨p
-  (1⊸↓¨p)((·⊑¨⊐∘⊢⊔⊢)pm.Set¨(⊢⟜⊐⊔⊣))⊑¨p # store queries in pm 
+  p((·⊑¨⊐∘⊢⊔⊢)pm.Set¨(⊢⟜⊐⊔⊣)) (•wdpath∾'/'∾0⊸⊑)¨p # store queries in pm 
 
   •Out ∾⟨ansi.magenta,"--",ansi.reset⟩ # print start of run marker
   (0≠≠)◶("Missing input file"⊸!)‿{Run•wdpath∾'/'∾∾𝕩} (¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args 
