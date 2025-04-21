@@ -1,2 +1,2 @@
-# pBQN
-<small>Printable BQN</small>
+# vBQN
+<small>verbose BQN</small>
