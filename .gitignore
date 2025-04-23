@@ -1,5 +1,5 @@
 _extern/
-_scratch*
+_scratch/
 _archived/
 _coding/
 _bqn/
@@ -7,10 +7,7 @@ _test.bqn
 .p.bqn
 
 *.dSYM/
-replxx_history.txt
 lib.so
-_fern.bqn
-db
 
 TODO
 .DS_Store
