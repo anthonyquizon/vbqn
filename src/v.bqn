@@ -155,7 +155,7 @@ usage←∾∾⟜lf¨⟨
   {𝕊:•Out usage⋄•Exit 0}⍟(0⊸=)≠•args 
 
   # parse PBQN files
-  p←•wdpath∾'/'∾(0⊸<≠)◶".v.bqn"‿⊑  (»"-p"⊸≡¨)⊸/•args
+  p←•wdpath∾'/'∾(0⊸<≠)◶".v.bqn"‿⊑  (»"-v"⊸≡¨)⊸/•args
   p↩•file.Exists◶{𝕊: •Out "Missing .v.bqn file"⋄⟨⟩}‿•file.Lines p
   p↩{𝕩/˜0=+`𝕩='#'}¨p                   # remove comments
   p↩{(∨`∧∨`⌾⌽)' '≠𝕩}⊸/¨p               # trim whitespace
@@ -165,5 +165,5 @@ usage←∾∾⟜lf¨⟨
   p((·⊑¨⊐∘⊢⊔⊢)pm.Set¨(⊢⟜⊐⊔⊣)) (•wdpath∾'/'∾0⊸⊑)¨p # store queries in pm 
 
   •Out ∾⟨ansi.magenta,"--",ansi.reset⟩ # print start of run marker
-  (0≠≠)◶("Missing input file"⊸!)‿{Run•wdpath∾'/'∾∾𝕩} (¬∘(⊣∨»)"-p"⊸≡¨)⊸/•args 
+  (0≠≠)◶("Missing input file"⊸!)‿{Run•wdpath∾'/'∾∾𝕩} (¬∘(⊣∨»)"-v"⊸≡¨)⊸/•args 
 }

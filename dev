@@ -1,4 +1,0 @@
-#! /usr/bin/env bash
-export TIMEFORMAT='%3R'
-ARGS=$@
-find . -name '*.bqn' | entr -r sh -c "time ./vbqn $ARGS"
