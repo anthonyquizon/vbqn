@@ -1,3 +1,1 @@
-Hello⇐{
-    •Show "bbb" ∾𝕩
-}
+Hello⇐{ •Show "from b" ∾𝕩 }

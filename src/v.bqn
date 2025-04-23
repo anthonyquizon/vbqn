@@ -2,13 +2,15 @@ gl      ←    •Import "./glyphs.bqn"
 compile ← gl •Import "./c.bqn"
 vm      ←    •Import "./vm.bqn"
 
+no_col←1
+
 ansi←{
   e⇐@+27
-  bold_cyan⇐e∾"[1;36m"
-  red      ⇐e∾"[31m"
-  magenta  ⇐e∾"[35m"
-  bold_red ⇐e∾"[1;31m"
-  reset    ⇐e∾"[0m"
+  BoldCyan⇐{𝕊:no_col?"";e∾"[1;36m"}
+  Red     ⇐{𝕊:no_col?"";e∾"[31m"}
+  Magenta ⇐{𝕊:no_col?"";e∾"[35m"}
+  BoldRed ⇐{𝕊:no_col?"";e∾"[1;31m"}
+  Reset   ⇐{𝕊:no_col?"";e∾"[0m"}
 }
 
 lf←@+10
@@ -52,12 +54,12 @@ dbg ← {
   } 
   Pop   ⇐ {t←-𝕩 ⋄ (s↓˜↩t) ⊢ ⌽t↑s} # Pop 𝕩 values; return as list
   Print ⇐ { 𝕊: 
-    •Out ∾⟨ansi.bold_red,"Error: ", •CurrentError@,ansi.reset⟩
+    •Out ∾⟨ansi.BoldRed@,"Error: ", •CurrentError@,ansi.Reset@⟩
     {𝕊 o‿c‿l‿f : 
       i←fm.Get f
-      •Out ∾⟨ansi.red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, ansi.reset⟩
+      •Out ∾⟨ansi.Red, f/˜¬(1¨↕1-˜≠p)∾(p←•wdpath∾'/')⍷f,':',•Fmt l, ansi.Reset@⟩
       •Out ∾⟨"  ",(l-1)⊑i.l⟩
-      •Out ∾⟨ansi.red, "  ",(' '¨↕c), '∧'¨↕o+1, ansi.reset⟩
+      •Out ∾⟨ansi.Red@, "  ",(' '¨↕c), '∧'¨↕o+1, ansi.Reset@⟩
     }¨⌽s
   }
 }
@@ -120,7 +122,7 @@ MakeInsp←{𝕊:
     Eval←{Bqn ∾⟨"⟨",1↓∾','⊸∾¨(h.Keys@),"⟩←•args",lf,𝕩⟩}
 
     {
-     •Out ∾⟨ansi.bold_cyan,0⊑𝕩,':',•Fmt 1⊑𝕩,' ',2⊑𝕩,ansi.reset⟩
+     •Out ∾⟨ansi.BoldCyan@,0⊑𝕩,':',•Fmt 1⊑𝕩,' ',2⊑𝕩,ansi.Reset@⟩
      •Show Eval 2⊑𝕩
     }¨q/˜l=1⊸⊑¨q # mask all valid line number queries # TODO conditional queries mask
 
@@ -164,6 +166,6 @@ usage←∾∾⟜lf¨⟨
   p↩•ParseFloat⎊⊣¨¨p
   p((·⊑¨⊐∘⊢⊔⊢)pm.Set¨(⊢⟜⊐⊔⊣)) (•wdpath∾'/'∾0⊸⊑)¨p # store queries in pm 
 
-  •Out ∾⟨ansi.magenta,"--",ansi.reset⟩ # print start of run marker
+  •Out ∾⟨ansi.Magenta@,"--",ansi.Reset@⟩ # print start of run marker
   (0≠≠)◶("Missing input file"⊸!)‿{Run•wdpath∾'/'∾∾𝕩} (¬∘(⊣∨»)"-v"⊸≡¨)⊸/•args 
 }
